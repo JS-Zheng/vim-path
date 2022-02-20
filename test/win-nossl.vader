@@ -1,0 +1,172 @@
+Before(Check Environment):
+  AssertEqual 1, has('win32'), 'This test can only be run on Windows'
+  set noshellslash
+
+
+Execute(Get the path separator):
+  AssertEqual '\', path#get_sep(), 'Should get the backslash as path separator (i.e., \)'
+
+
+Execute(Check if an absolute path):
+  AssertEqual 1, path#is_abs('\'), 'A single forward slash should be an absolute path'
+  AssertEqual 1, path#is_abs('\a\b\c'), 'A path started from implicit root should be an absolute path'
+  AssertEqual 1, path#is_abs('c:\'), 'A drive root should be an absolute path'
+  AssertEqual 1, path#is_abs('c:\a\b\c'), 'A path started from drive root should be an absolute path'
+  AssertEqual 0, path#is_abs('~\a\b\c'), 'A path not started from implicit root should not be an absolute path'
+  AssertEqual 0, path#is_abs('..\a\b\c'), 'A path not started from implicit should not be an absolute path'
+  AssertEqual 0, path#is_abs('.'), 'A path not started from implicit root should not be an absolute path'
+
+
+Execute(Trim separators):
+  AssertEqual 'a\b\c', path#strip_sep('\\/a\b\c/\\'), 'Should strip both forward slash and backslash'
+  AssertEqual 'a\b\c\', path#strip_leading_sep('\a\b\c\'), 'Should only strip the leading slashes'
+  AssertEqual 'a\b\c\\\', path#strip_leading_sep('\\\a\b\c\\\'), 'Should only strip the leading slashes'
+  AssertEqual 'a\b\c\', path#strip_leading_sep('\/a\b\c\'), 'Should only strip the leading slashes'
+  AssertEqual '\a\b\c', path#strip_trailing_sep('\a\b\c\'), 'Should only strip the trailing slashes'
+  AssertEqual '\\\a\b\c', path#strip_trailing_sep('\\\a\b\c\\\'), 'Should only strip the trailing slashes'
+  AssertEqual '\a\b\c', path#strip_trailing_sep('\a\b\c/\'), 'Should only strip the trailing slashes'
+  AssertEqual 'a\b\c', path#strip_sep('\a\b\c\'), 'Should strip the both trailing and trailing slashes'
+  AssertEqual 'a\b\c', path#strip_sep('\\\a\b\c\\\'), 'Should strip the both trailing and trailing slashes'
+
+
+Execute(Join Paths):
+  AssertEqual '.', path#join(), 'Join the empty path should get a dot directory'
+  AssertEqual '.', path#join('', '', ''), 'Join empty paths should get a dot directory'
+  AssertEqual 'a', path#join('', '', 'a'), 'Join empty paths and a directory should get that directory'
+  AssertEqual '\a\c', path#join('\a\b\..\c'), 'Join a single path should normalize it'
+  AssertEqual 'c:\a\c', path#join('c:\a\b\..\c'), 'Join a single path should normalize it'
+  AssertEqual '\a\c', path#join('\a\b\..\.\.\c'), 'Join a single path should normalize it'
+  AssertEqual 'c:\a\c', path#join('c:\a\b\..\.\.\c'), 'Join a single path should normalize it'
+  AssertEqual '\a\b\c\d\', path#join('\a', '\b', '\c', '\d\'), 'Join paths should strip redundant slashes'
+  AssertEqual 'c:\a\b\c\d\', path#join('c:\', '\a', '\b', '\c', '\d\'), 'Join paths should strip redundant slashes'
+  AssertEqual '\a\b\d', path#join('\a', 'b', '\c', '..', '.\', 'd', '.'), 'Join paths should normalize .. and . case'
+  AssertEqual 'c:\a\b\d', path#join('c:', '\a', 'b', '\c', '..', '.\', 'd', '.'), 'Join paths should normalize .. and . case'
+  AssertEqual 'a\b\c\d', path#join('a', 'b', 'c', 'd'), 'Join paths without the root should get a relative path'
+  AssertEqual '.\a\b\c\d', path#join('.', 'a', 'b', 'c', 'd'), 'Join paths without the root should get a relative path'
+  AssertEqual '~\a\b\c', path#join('~', 'a', 'b', 'c'), 'Join paths without the root should get a relative path without expanding'
+
+
+Execute(Split Paths):
+  AssertEqual ['.'], path#split('.'), 'Split a dot path should put it in a list'
+  AssertEqual ['.\', 'a\', 'b\', 'c'], path#split('.\a\b\c'), 'Split a path should put each component in a list and keep their trailing separator'
+  AssertEqual ['\', 'a\', 'b\', 'c'], path#split('\a\b\c'), 'Split a path should put each component in a list and keep the root'
+  AssertEqual ['c:\', 'a\', 'b\', 'c'], path#split('c:\a\b\c'), 'Split a path should put each component in a list and keep the root'
+  AssertEqual ['.\', 'a\', 'b\', '..\', '.\', 'c'], path#split('.\a\b\..\.\c'), 'Should not auto resolve a path before spliting it'
+  AssertEqual ['\\a\', 'b\', 'c'], path#split('\\a\b\c'), 'Split a UNC path should keep the hostname as root'
+
+
+Execute(Join and Split):
+  let path = '\home\user\bob\vim\vimrcs\general.vim'
+  let components = path#split(path)
+  let joined_path = path#join(components)
+  AssertEqual path, joined_path, 'Join the split components should equal to original path with normalize'
+
+  let path = 'c:\home\user\bob\vim\vimrcs\general.vim'
+  let components = path#split(path)
+  let joined_path = path#join(components)
+  AssertEqual path, joined_path, 'Join the split components should equal to original path with normalize'
+
+  let path = '\home\user\bob\vim\vimrcs\'
+  let components = path#split(path)
+  let joined_path = path#join(components)
+  AssertEqual path, joined_path, 'Join the split components should equal to original path with normalize'
+
+  let path = 'c:\home\user\bob\vim\vimrcs\'
+  let components = path#split(path)
+  let joined_path = path#join(components)
+  AssertEqual path, joined_path, 'Join the split components should equal to original path with normalize'
+
+  let path = '\home\user\bob\vim\..\vimrcs\\\\\\\\\\'
+  let normalize_path = path#normalize(path)
+  let components = path#split(path)
+  let joined_path = path#join(components)
+  AssertNotEqual path, joined_path, 'The joined path should be normalized'
+  AssertEqual normalize_path, joined_path, 'Join the split components should equal to original path with normalize'
+
+  let path = 'c:\home\user\bob\vim\..\vimrcs\\\\\\\\\\'
+  let normalize_path = path#normalize(path)
+  let components = path#split(path)
+  let joined_path = path#join(components)
+  AssertNotEqual path, joined_path, 'The joined path should be normalized'
+  AssertEqual normalize_path, joined_path, 'Join the split components should equal to original path with normalize'
+
+
+Execute(Split UNC Paths):
+  AssertEqual ['\\a'], path#split('\\a'), 'Split a UNC path should put its host-name in a list'
+  AssertEqual ['\\a\', 'b\', 'c'], path#split('\\a\b\c'), 'Split a UNC path should put its host-name and share-name in a list respectively'
+  AssertThrows path#split_unc('\\a')
+
+
+Execute(Normalize Paths):
+  AssertEqual '.\file\', path#normalize('.\dir\..\.\\file\'), 'Normalize a path should be equivalent to call vim-simplify'
+  AssertEqual '\\file\', path#normalize('\\file\'), 'Normalize a path should be equivalent to call vim-simplify'
+  AssertEqual '\\\file\', path#normalize('\\\file\'), 'Normalize a path should be equivalent to call vim-simplify'
+  AssertEqual 'a\b', path#normalize('a\\b'), 'Normalize a path should strip redundant components'
+  AssertEqual 'a\b\', path#normalize('a\b\'), 'Normalize a path should strip redundant components'
+  AssertEqual 'a\b\', path#normalize('a\.\b\'), 'Normalize a path should strip redundant components'
+  AssertEqual 'a\b\', path#normalize('a\c\..\b\'), 'Normalize a path should strip redundant components'
+  AssertEqual 'c:\a\c', path#normalize('c:\a\b\..\c'), 'Normalize a path should strip redundant components'
+  AssertEqual '~\.vim', path#normalize('~\.vim'), 'Normalize a normalized path should do nothing'
+
+
+Execute(Get the basename of a path):
+  AssertEqual 'alice.txt', path#get_basename('\foo\bar\bob\alice.txt'), 'Should get the basename of a file'
+  AssertEqual 'alice.txt', path#get_basename('c:\foo\bar\bob\alice.txt'), 'Should get the basename of a file'
+  AssertEqual 'alice', path#get_basename('\foo\bar\bob\alice'), 'Should get the basename of a file'
+  AssertEqual 'alice', path#get_basename('c:\foo\bar\bob\alice'), 'Should get the basename of a file'
+  AssertEqual 'alice', path#get_basename('\foo\bar\bob\alice\'), 'Should get the basename of a directory'
+  AssertEqual 'alice', path#get_basename('c:\foo\bar\bob\alice\'), 'Should get the basename of a directory'
+
+
+Execute(Get the file extension of a path):
+  AssertEqual 'gz', path#get_ext('\foo\bar\bob\alice.tar.gz'), 'Should get the extension of a file'
+  AssertEqual 'gz', path#get_ext('c:\foo\bar\bob\alice.tar.gz'), 'Should get the extension of a file'
+  AssertEqual 'txt', path#get_ext('\foo\bar\bob\alice.txt'), 'Should get the extension of a file'
+  AssertEqual 'txt', path#get_ext('c:\foo\bar\bob\alice.txt'), 'Should get the extension of a file'
+  AssertEqual '', path#get_ext('\foo\bar\bob\alice'), 'Should get the empty string if the file ext could not be found'
+  AssertEqual '', path#get_ext('c:\foo\bar\bob\alice'), 'Should get the empty string if the file ext could not be found'
+  AssertEqual '', path#get_ext('\foo\bar\bob\alice\'), 'Should get the empty string if is the dir path'
+  AssertEqual '', path#get_ext('c:\foo\bar\bob\alice\'), 'Should get the empty string if is the dir path'
+
+
+Execute(Get the directory of a path):
+  AssertEqual '\foo\bar\bob', path#get_dir('\foo\bar\bob\alice.txt', 0), 'Should get the base directory of a file'
+  AssertEqual 'c:\foo\bar\bob', path#get_dir('c:\foo\bar\bob\alice.txt', 0), 'Should get the base directory of a file'
+  AssertEqual '\foo\bar\bob', path#get_dir('\foo\bar\bob\alice.txt', 1), 'Should get the base directory of a file'
+  AssertEqual 'c:\foo\bar\bob', path#get_dir('c:\foo\bar\bob\alice.txt', 1), 'Should get the base directory of a file'
+  AssertEqual '\foo\bar\bob', path#get_dir('\foo\bar\bob\alice', 0), 'Should get the base directory of a unknown-type path'
+  AssertEqual 'c:\foo\bar\bob', path#get_dir('c:\foo\bar\bob\alice', 0), 'Should get the base directory of a unknown-type path'
+  AssertEqual '\foo\bar\bob', path#get_dir('\foo\bar\bob\alice', 1), 'Should get the base directory of a unknown-type path'
+  AssertEqual 'c:\foo\bar\bob', path#get_dir('c:\foo\bar\bob\alice', 1), 'Should get the base directory of a unknown-type path'
+  AssertEqual '\foo\bar\bob\alice', path#get_dir('\foo\bar\bob\alice\', 0), 'Should remove the trailing path separator of a directory path if no specified ignore_trailing_sep'
+  AssertEqual 'c:\foo\bar\bob\alice', path#get_dir('c:\foo\bar\bob\alice\', 0), 'Should remove the trailing path separator of a directory path if no specified ignore_trailing_sep'
+  AssertEqual '\foo\bar\bob', path#get_dir('\foo\bar\bob\alice\', 1), 'Should get the base directory of a directory path if specified ignore_trailing_sep'
+  AssertEqual 'c:\foo\bar\bob', path#get_dir('c:\foo\bar\bob\alice\', 1), 'Should get the base directory of a directory path if specified ignore_trailing_sep'
+
+
+Execute(Parse Paths):
+  AssertEqual #{root: '\', dir: '\home\user\dir', base: 'file.txt', ext: 'txt', name: 'file'},
+    \path#parse('\home\user\dir\file.txt')
+  AssertEqual #{root: 'c:\', dir: 'c:\home\user\dir', base: 'file.txt', ext: 'txt', name: 'file'},
+    \path#parse('c:\home\user\dir\file.txt')
+  AssertEqual #{root: '', dir: 'home\user\dir', base: 'file.txt', ext: 'txt', name: 'file'},
+    \path#parse('home\user\dir\file.txt')
+  AssertEqual #{root: '\', dir: '\home\user\dir', base: 'file', ext: '', name: 'file'},
+    \path#parse('\home\user\dir\file')
+  AssertEqual #{root: 'c:\', dir: 'c:\home\user\dir', base: 'file', ext: '', name: 'file'},
+    \path#parse('c:\home\user\dir\file')
+  AssertEqual #{root: '', dir: 'home\user\dir', base: 'file', ext: '', name: 'file'},
+    \path#parse('home\user\dir\file')
+  AssertEqual #{root: '\', dir: '\home\user\dir\dir2', base: 'dir2', ext: '', name: 'dir2'},
+    \path#parse('\home\user\dir\dir2\')
+  AssertEqual #{root: 'c:\', dir: 'c:\home\user\dir\dir2', base: 'dir2', ext: '', name: 'dir2'},
+    \path#parse('c:\home\user\dir\dir2\')
+  AssertEqual #{root: '', dir: 'home\user\dir\dir2', base: 'dir2', ext: '', name: 'dir2'},
+    \path#parse('home\user\dir\dir2\')
+
+  AssertEqual #{root: '\\host', dir: '\\host\share\dir', base: 'file.txt', ext: 'txt', name: 'file'},
+    \path#parse('\\host\share\dir\file.txt')
+  AssertEqual #{root: '\\host', dir: '\\host\share\dir', base: 'file', ext: '', name: 'file'},
+    \path#parse('\\host\share\dir\file')
+  AssertEqual #{root: '\\host', dir: '\\host\share\dir\dir2', base: 'dir2', ext: '', name: 'dir2'},
+    \path#parse('\\host\share\dir\dir2\')
