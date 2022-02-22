@@ -294,6 +294,7 @@ function! path#iter(path, ...) abort
   let i = 0
   for l:comp in components
     if (i == 0)
+      let i += 1
       continue
     endif
 
@@ -311,7 +312,7 @@ function! path#find_markers(path, markers, ...) abort
   let comps = path#split(a:path)
   let n_comps = len(comps)
   if (!n_comps)
-    return ''
+    return ['', '']
   endif
 
   if (top_down)
@@ -328,12 +329,12 @@ function! s:find_markers_top_down(comps, markers) abort
     let path .= comp
     for marker in a:markers
       if (!empty(globpath(path, marker)))
-        return path
+        return [path, marker]
       endif
     endfor
   endfor
 
-  return ''
+  return ['', '']
 endfunction
 
 
@@ -344,7 +345,7 @@ function! s:find_markers_bottom_up(path, comps, n_comps, markers) abort
     let comp = a:comps[i]
     for marker in a:markers
       if (!empty(globpath(path, marker)))
-        return path
+        return [path, marker]
       endif
     endfor
 
@@ -352,8 +353,8 @@ function! s:find_markers_bottom_up(path, comps, n_comps, markers) abort
     let i -= 1
   endwhile
 
-  return ''
-endfunc
+  return ['', '']
+endfunction
 
 
 " }}}
@@ -370,6 +371,15 @@ if (s:is_win)
   function! path#as_dir(path) abort
     let path = path#strip_trailing_sep(a:path)
     return path . path#get_sep()
+  endfunction
+
+
+  function! path#strip_trailing_sep_s(path) abort
+    if (empty(a:path) || a:path =~# '^\a:[\/]$' || a:path =~# '^[\/]$')
+      return a:path
+    endif
+
+    return path#strip_trailing_sep(a:path)
   endfunction
 
 
@@ -417,6 +427,15 @@ else
   function! path#as_dir(path) abort
     let path = path#strip_trailing_sep(a:path)
     return path . '/'
+  endfunction
+
+
+  function! path#strip_trailing_sep_s(path) abort
+    if (empty(a:path) || a:path =~# '^/$')
+      return a:path
+    endif
+
+    return path#strip_trailing_sep(a:path)
   endfunction
 
 
