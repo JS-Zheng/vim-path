@@ -91,7 +91,7 @@ path#curr_buf_dir([absolute: bool]): string
 ```vim
 " Joins any number of components into a single path with the platform-specific
 " separator, then normalizes it.
-" Same as `path#(paths: list<string>, 0, 1, 0)`
+" Same as the `path#(paths: list<string>, 0, 1, 0)`
 "
 " For examples:
 " - (Unix)
@@ -156,16 +156,17 @@ endfunc
 vim-path provides a `path#find_markers()` which works like the previous exmaple but supports bottom-up iteration:
 ```vim
 " Finds `markers` in each component of `path`.
-" Returns the directory path if found, otherwise returns an empty string.
+" Returns a list, which contains the directory path and the marker which has
+" been found, otherwise returns ['', ''].
 " @top_down: bool - [optional] (default: 1)
 "
 " For examples:
 " - (Unix)
 "   path#find_markers(path#curr_buf_dir(), ['.git', '.svn', '.vscode'], 0)
-"   return '/Users/js-zheng/Workspace/vim-path'
+"   return ['/Users/js-zheng/Workspace/vim-path', '.git']
 "          (in my MBPR)
 "
-path#find_markers(path: string, markers: list<string>, [top_down: bool]): string
+path#find_markers(path: string, markers: list<string>, [top_down: bool]): [path: string, marker: string]
 ```
 
 vim-path also provides a `path#iter()`, which is a simple wrapper function to make each element of the `path#split()` result to be accessible. It's slightly slow but very convenient.
@@ -268,8 +269,13 @@ path#get_sep(): string
 "   return 'Extreme/Decadence/Dance'
 "   (Windows doesn't allow backslashes in filename)
 path#strip_sep(path: string): string
-path#path#strip_leading_sep(path: string): string
-path#path#strip_trailing_sep(path: string): string
+path#strip_leading_sep(path: string): string
+path#strip_trailing_sep(path: string): string
+
+
+" Same as the `path#strip_trailing_sep()` but if the path is root, it will not
+" be executed.
+path#strip_trailing_sep_s(path: string): string
 
 
 " Append a path separator to path if possible.
