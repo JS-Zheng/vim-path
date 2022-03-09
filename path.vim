@@ -18,7 +18,27 @@ set cpo&vim
 let s:is_win = has('win32')
 let s:is_nvim = has('nvim')
 let s:has_cmd_tcd = exists(':tcd')
-let s:has_fn_trim = exists('*trim')
+
+if (has('patch-8.2.0868'))
+  let s:has_patch_8_2_0868 = 1
+
+  " Add an argument to only trim the beginning or end.
+  " https://github.com/vim/vim/commit/2245ae18e3480057f98fc0e5d9f18091f32a5de0
+  let has_fn_dir_trim = 1
+  let has_fn_trim = 1
+elseif (has('patch-8.0.1630'))
+  let s:has_patch_8_0_1630 = 1
+
+
+  " Add the trim() function
+  " https://github.com/vim/vim/commit/295ac5ab5e840af6051bed5ec9d9acc3c73445de
+  let has_fn_dir_trim = 0
+  let has_fn_trim = 1
+else
+  let has_fn_dir_trim = 0
+  let has_fn_trim = 0
+endif
+
 
 
 " }}}
@@ -383,7 +403,7 @@ if (s:is_win)
   endfunction
 
 
-  if (s:has_fn_trim)
+  if (s:has_fn_dir_trim)
 
     function! path#strip_sep(path) abort
       return trim(a:path, '\/', 0)
@@ -401,9 +421,19 @@ if (s:is_win)
 
   else
 
-    function! path#strip_sep(path) abort
-      return substitute(a:path, '\v^[\/]+|[\/]+$', '','g')
-    endfunction
+    if (s:has_fn_trim)
+
+      function! path#strip_sep(path) abort
+        return trim(a:path, '\/')
+      endfunction
+
+    else
+
+      function! path#strip_sep(path) abort
+        return substitute(a:path, '\v^[\/]+|[\/]+$', '','g')
+      endfunction
+
+    endif
 
 
     function! path#strip_leading_sep(path) abort
@@ -439,7 +469,7 @@ else
   endfunction
 
 
-  if (s:has_fn_trim)
+  if (s:has_fn_dir_trim)
 
     function! path#strip_sep(path) abort
       return trim(a:path, '/', 0)
@@ -457,9 +487,19 @@ else
 
   else
 
-    function! path#strip_sep(path) abort
-      return substitute(a:path, '\v^/+|/+$', '','g')
-    endfunction
+    if (s:has_fn_trim)
+
+      function! path#strip_sep(path) abort
+        return trim(a:path, '/')
+      endfunction
+
+    else
+
+      function! path#strip_sep(path) abort
+        return substitute(a:path, '\v^/+|/+$', '','g')
+      endfunction
+
+    endif
 
 
     function! path#strip_leading_sep(path) abort
