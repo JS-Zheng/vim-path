@@ -1,9 +1,9 @@
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Execution Guard {{{
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" if exists('g:loaded_path')
-"   finish
-" endif
+if exists('g:loaded_path')
+  finish
+endif
 
 let g:loaded_path = 1
 
@@ -183,9 +183,9 @@ function! s:join_path(components, normalize) abort
     if (i == 0)
       let joined_path = path#strip_trailing_sep(comp)
     elseif (i != (len - 1))
-      let joined_path .= (sep . path#strip_sep(comp))
+      let joined_path ..= (sep .. path#strip_sep(comp))
     else
-      let joined_path .= (sep . path#strip_leading_sep(comp))
+      let joined_path ..= (sep .. path#strip_leading_sep(comp))
     endif
 
     let i += 1
@@ -315,7 +315,7 @@ function! path#iter(path, ...) abort
       continue
     endif
 
-    let components[i] = l:components[i - 1] . l:comp
+    let components[i] = l:components[i - 1] .. l:comp
 
     let i += 1
   endfor
@@ -326,6 +326,7 @@ endfunction
 
 function! path#find_markers(path, markers, ...) abort
   let top_down = (a:0) ? a:1 : 1
+  let excludes = (a:0 > 1) ? a:2 : []
   let comps = path#split(a:path)
   let n_comps = len(comps)
   if (!n_comps)
@@ -333,20 +334,28 @@ function! path#find_markers(path, markers, ...) abort
   endif
 
   if (top_down)
-    return s:find_markers_top_down(comps, a:markers)
+    return s:find_markers_top_down(comps, a:markers, excludes)
   endif
 
-  return s:find_markers_bottom_up(a:path, comps, n_comps, a:markers)
+  return s:find_markers_bottom_up(a:path, comps, n_comps, a:markers, excludes)
 endfunction
 
 
-function! s:find_markers_top_down(comps, markers) abort
+function! s:is_exclusive_path(excludes, path)
+  return index(a:excludes, path) >= 0
+endfunction
+
+
+function! s:find_markers_top_down(comps, markers, excludes) abort
   let path = ''
   for comp in a:comps
-    let path .= comp
+    let path ..= comp
     for marker in a:markers
       if (!empty(globpath(path, marker)))
-        return [path, marker]
+        let strip_path = path#strip_trailing_sep_s(path)
+        if (!s:is_exclusive_path(a:excludes, strip_path))
+          return [strip_path, marker]
+        endif
       endif
     endfor
   endfor
@@ -355,14 +364,17 @@ function! s:find_markers_top_down(comps, markers) abort
 endfunction
 
 
-function! s:find_markers_bottom_up(path, comps, n_comps, markers) abort
+function! s:find_markers_bottom_up(path, comps, n_comps, markers, excludes) abort
   let i = a:n_comps - 1
   let path = a:path
   while (i >= 0)
     let comp = a:comps[i]
     for marker in a:markers
       if (!empty(globpath(path, marker)))
-        return [path, marker]
+        let strip_path = path#strip_trailing_sep_s(path)
+        if (!s:is_exclusive_path(a:excludes, strip_path))
+          return [strip_path, marker]
+        endif
       endif
     endfor
 
@@ -387,7 +399,7 @@ if (s:is_win)
 
   function! path#as_dir(path) abort
     let path = path#strip_trailing_sep(a:path)
-    return path . path#get_sep()
+    return path .. path#get_sep()
   endfunction
 
 
@@ -453,7 +465,7 @@ else
 
   function! path#as_dir(path) abort
     let path = path#strip_trailing_sep(a:path)
-    return path . '/'
+    return path .. '/'
   endfunction
 
 
@@ -691,7 +703,7 @@ function! path#to_abs(path) abort
 
   let cwd = getcwd()
   let sep = path#get_sep()
-  return path#normalize(cwd . sep . a:path)
+  return path#normalize(cwd .. sep .. a:path)
 endfunction
 
 
@@ -699,7 +711,7 @@ if (s:is_win)
 
   function! path#to_glob(path) abort
     " See |wildcard|
-    let glob_path =  escape(a:path, '\?*[')
+    let glob_path = escape(a:path, '\?*[')
     return substitute(glob_path, '\V[', '[[]', 'g')
   endfunction
 
@@ -717,6 +729,30 @@ endif
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Basis {{{
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! path#shellescape_b(paths, ...) abort
+  let special = (a:0 > 0) ? a:1 : 0
+  return map(a:paths, function('s:escape_search_path', [special]))
+endfunction
+
+
+function! path#shellescape(path, ...) abort
+  let special = (a:0 > 0) ? a:1 : 0
+  if (a:path =~# '^\~')
+    let p = a:path[1:]
+    if (empty(p))
+      return '~'
+    endif
+    return '~' .. shellescape(p, special)
+  endif
+
+  if (a:path =~# '^\$')
+    return shellescape(expand(a:path), special)
+  endif
+
+  return shellescape(a:path, special)
+endfunction
+
+
 function! path#expand(...) abort
   if (len(a:000) == 1)
     let args = a:000 + [get(g:, 'path_expand_nosuf', 1)]
@@ -822,7 +858,7 @@ function! s:init_uniq_comps(components, n_comps, len) abort
   while i < a:n_comps - 1
     let comp = a:components[i]
     let qualifier = printf('{1,%d}', a:len)
-    let min_comp = matchstr(comp, '\v^.{-}[^.\/:*?"<>|]' . qualifier)
+    let min_comp = matchstr(comp, '\v^.{-}[^.\/:*?"<>|]' .. qualifier)
     if (empty(min_comp))
       let min_comp = comp
     endif
@@ -854,6 +890,11 @@ function! s:get_uniq_part(target, other) abort
   endwhile
 
   return a:target
+endfunction
+
+
+function! s:escape_search_path(special, index, path)
+  return path#shellescape(a:path, a:special)
 endfunction
 
 

@@ -158,7 +158,8 @@ vim-path provides a `path#find_markers()` which works like the previous exmaple 
 " Finds `markers` in each component of `path`.
 " Returns a list, which contains the directory path and the marker which has
 " been found, otherwise returns ['', ''].
-" @top_down: bool - [optional] (default: 1)
+" @top_down: bool - [optional] top-down or bottom-up search (default: 1)
+" @excludes: list<string> - [optional] exclude paths (default: [])
 "
 " For examples:
 " - (Unix)
