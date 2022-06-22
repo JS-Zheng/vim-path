@@ -153,7 +153,7 @@ endfunc
 
 ### Iterator
 
-vim-path provides a `path#find_markers()` which works like the previous exmaple but supports bottom-up iteration:
+vim-path provides a `path#find_markers()` which works like the previous example but supports bottom-up iteration:
 ```vim
 " Finds `markers` in each component of `path`.
 " Returns a list, which contains the directory path and the marker which has
@@ -285,7 +285,7 @@ path#as_dir(path: string): string
 
 ---
 
-### Type Dectection
+### Type Detection
 
 ```vim
 " Determines if the `path` is a directory.

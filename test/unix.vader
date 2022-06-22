@@ -44,7 +44,7 @@ Execute(Split Paths):
   AssertEqual ['.'], path#split('.'), 'Split a dot path should put it in a list'
   AssertEqual ['./', 'a/', 'b/', 'c'], path#split('./a/b/c'), 'Split a path should put each component in a list and keep their trailing separator'
   AssertEqual ['/', 'a/', 'b/', 'c'], path#split('/a/b/c'), 'Split a path should put each component in a list and keep the root'
-  AssertEqual ['./', 'a/', 'b/', '../', './', 'c'], path#split('./a/b/.././c'), 'Should not auto resolve a path before spliting it'
+  AssertEqual ['./', 'a/', 'b/', '../', './', 'c'], path#split('./a/b/.././c'), 'Should not auto resolve a path before splitting it'
 
 
 Execute(Join and Split):

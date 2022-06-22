@@ -51,7 +51,7 @@ Execute(Split Paths):
   AssertEqual ['./', 'a/', 'b/', 'c'], path#split('./a/b/c'), 'Split a path should put each component in a list and keep their trailing separator'
   AssertEqual ['/', 'a/', 'b/', 'c'], path#split('/a/b/c'), 'Split a path should put each component in a list and keep the root'
   AssertEqual ['c:/', 'a/', 'b/', 'c'], path#split('c:/a/b/c'), 'Split a path should put each component in a list and keep the root'
-  AssertEqual ['./', 'a/', 'b/', '../', './', 'c'], path#split('./a/b/.././c'), 'Should not auto resolve a path before spliting it'
+  AssertEqual ['./', 'a/', 'b/', '../', './', 'c'], path#split('./a/b/.././c'), 'Should not auto resolve a path before splitting it'
   AssertEqual ['//a/', 'b/', 'c'], path#split('//a/b/c'), 'Split a UNC path should keep the hostname as root'
 
 
