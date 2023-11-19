@@ -1,0 +1,92 @@
+Execute (Path Parsing):
+
+  " Test: path#parse for a typical file path
+  let parsed = path#parse('C:\Users\user\project\file.txt')
+  AssertEqual 'C:\', parsed['root'], 'Correctly identifies the root'
+  AssertEqual 'C:\Users\user\project', parsed['dir'], 'Correctly identifies the directory'
+  AssertEqual 'file.txt', parsed['base'], 'Correctly identifies the base'
+  AssertEqual 'file', parsed['name'], 'Correctly identifies the name'
+  AssertEqual 'txt', parsed['ext'], 'Correctly identifies the extension'
+
+  " Test: path#get_basename
+  AssertEqual 'file.txt', path#get_basename('C:\Users\user\project\file.txt'), 'Correctly gets the basename'
+
+  " Test: path#get_dir with and without ignoring trailing separator
+  AssertEqual 'C:\Users\user\project', path#get_dir('C:\Users\user\project\file.txt'), 'Correctly gets the directory'
+  AssertEqual 'C:\Users\user\project', path#get_dir('C:\Users\user\project\file.txt\', 1), 'Correctly gets the directory ignoring trailing separator'
+  AssertEqual 'C:\Users\user\project\file.txt', path#get_dir('C:\Users\user\project\file.txt\', 0), 'Correctly gets the directory considering trailing separator'
+
+  " Test: path#get_name
+  AssertEqual 'file', path#get_name('C:\Users\user\project\file.txt'), 'Correctly gets the name'
+
+  " Test: path#get_ext
+  AssertEqual 'txt', path#get_ext('C:\Users\user\project\file.txt'), 'Correctly gets the extension'
+
+  " Test: path#get_ext for a file with no extension
+  AssertEqual '', path#get_ext('C:\Users\user\document'), 'Correctly gets no extension for a file without extension'
+
+  " Test: path#get_basename for a file with no extension
+  AssertEqual 'document', path#get_basename('C:\Users\user\document'), 'Correctly gets the basename for a file without extension'
+
+  " Test: path#get_ext for a file with multiple extensions
+  AssertEqual 'gz', path#get_ext('C:\Users\user\archive.tar.gz'), 'Correctly gets the last extension for a file with multiple extensions'
+
+  " Test: path#get_basename for a file with multiple extensions
+  AssertEqual 'archive.tar.gz', path#get_basename('C:\Users\user\archive.tar.gz'), 'Correctly gets the basename for a file with multiple extensions'
+
+  " Test: path#get_ext for a hidden file with extension
+  AssertEqual 'config', path#get_ext('C:\Users\user\.vimrc.config'), 'Correctly gets the extension for a hidden file with extension'
+
+  " Test: path#get_basename for a hidden file with extension
+  AssertEqual '.vimrc.config', path#get_basename('C:\Users\user\.vimrc.config'), 'Correctly gets the basename for a hidden file with extension'
+
+  " Test: path#get_ext for a hidden file without extension
+  AssertEqual '', path#get_ext('C:\Users\user\.vimrc'), 'Correctly gets no extension for a hidden file without extension'
+
+  " Test: path#get_basename for a hidden file without extension
+  AssertEqual '.vimrc', path#get_basename('C:\Users\user\.vimrc'), 'Correctly gets the basename for a hidden file without extension'
+
+  " Test: path#get_ext for a file with complex name
+  AssertEqual 'gz', path#get_ext('C:\Users\user\data.backup.2021.tar.gz'), 'Correctly gets the last extension for a file with complex name'
+
+  " Test: path#get_basename for a file with complex name
+  AssertEqual 'data.backup.2021.tar.gz', path#get_basename('C:\Users\user\data.backup.2021.tar.gz'), 'Correctly gets the basename for a file with complex name'
+
+  " Test: path#get_ext for a file with unicode characters
+  AssertEqual '文件', path#get_ext('C:\家\維護.文件'), 'Correctly gets the extension for a file with unicode characters'
+
+  " Test: path#get_basename for a file with unicode characters
+  AssertEqual '維護.文件', path#get_basename('C:\家\維護.文件'), 'Correctly gets the basename for a file with unicode characters'
+
+
+Execute (UNC Path Parsing):
+
+  " Test: path#parse for a typical UNC file path
+  let parsed_unc = path#parse('\\Server\Share\Users\user\project\file.txt')
+  AssertEqual '\\Server\Share', parsed_unc['root'], 'Correctly identifies the root in UNC path'
+  AssertEqual '\\Server\Share\Users\user\project', parsed_unc['dir'], 'Correctly identifies the directory in UNC path'
+  AssertEqual 'file.txt', parsed_unc['base'], 'Correctly identifies the base in UNC path'
+  AssertEqual 'file', parsed_unc['name'], 'Correctly identifies the name in UNC path'
+  AssertEqual 'txt', parsed_unc['ext'], 'Correctly identifies the extension in UNC path'
+
+  " Test: path#get_basename for a UNC path
+  AssertEqual 'file.txt', path#get_basename('\\Server\Share\Users\user\project\file.txt'), 'Correctly gets the basename for a UNC path'
+
+  " Test: path#get_dir for a UNC path with and without ignoring trailing separator
+  AssertEqual '\\Server\Share\Users\user\project', path#get_dir('\\Server\Share\Users\user\project\file.txt'), 'Correctly gets the directory for a UNC path'
+  AssertEqual '\\Server\Share\Users\user\project', path#get_dir('\\Server\Share\Users\user\project\file.txt\', 1), 'Correctly gets the directory for a UNC path ignoring trailing separator'
+  AssertEqual '\\Server\Share\Users\user\project\file.txt', path#get_dir('\\Server\Share\Users\user\project\file.txt\', 0), 'Correctly gets the directory for a UNC path considering trailing separator'
+
+  " Test: path#get_root for a UNC path
+  AssertEqual '\\Server\Share', path#get_root('\\Server\Share\Users\user\project'), 'Correctly identifies root for a UNC path'
+  AssertEqual '', path#get_root('Users\user\project'), 'Correctly identifies non-root for a non-UNC relative path'
+
+  " Test: path#parse for a UNC path to a directory
+  let parsed_dir_unc = path#parse('\\Server\Share\Users\user\project\\')
+  AssertEqual '\\Server\Share\Users\user\project', parsed_dir_unc['dir'], 'Correctly identifies the directory for a UNC directory path'
+  AssertEqual 'project', parsed_dir_unc['base'], 'Correctly identifies the base for a UNC directory path'
+  AssertEqual 'project', parsed_dir_unc['name'], 'Correctly identifies the name for a UNC directory path'
+  AssertEqual '', parsed_dir_unc['ext'], 'Correctly identifies the extension for a UNC directory path'
+
+  " Test: path#get_basename for a UNC root directory
+  AssertEqual 'Share', path#get_basename('\\Server\Share\'), 'Correctly gets the basename for a UNC root directory'

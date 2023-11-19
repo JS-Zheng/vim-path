@@ -1,0 +1,16 @@
+Execute(Env Test):
+  AssertEqual 0, has('win32'), 'This test cannot be run on Windows'
+  AssertEqual 0, has('win64'), 'This test cannot be run on Windows'
+
+Include: unix/constructor.vader
+Include: unix/expand.vader
+Include: unix/finder.vader
+Include: unix/iter.vader
+Include: unix/join.vader
+Include: unix/normalize.vader
+Include: unix/parse.vader
+Include: unix/resolve.vader
+Include: unix/sep_strip.vader
+Include: unix/shorten.vader
+Include: unix/split.vader
+Include: unix/type.vader

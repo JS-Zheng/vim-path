@@ -1,0 +1,46 @@
+Execute (Path Splitting):
+
+  " Test: Splitting an absolute path with multiple directories and a file
+  AssertEqual ['/', 'home/', 'user/', 'file.txt'], path#split('/home/user/file.txt'), 'Splits path with directories and file'
+
+  " Test: Splitting an absolute path with trailing slash
+  AssertEqual ['/', 'foo/', 'bar/'], path#split('/foo/bar/'), 'Splits path with trailing slash'
+
+  " Test: Splitting an absolute path without trailing slash
+  AssertEqual ['/', 'foo/', 'bar'], path#split('/foo/bar'), 'Splits path without trailing slash'
+
+  " Test: Splitting a path with just the root directory
+  AssertEqual ['/'], path#split('/'), 'Splits root directory'
+
+  " Test: Splitting a path with repeated slashes
+  AssertEqual ['/', '/', 'foo/', '/', 'bar/', '/'], path#split('//foo//bar//'), 'Handles paths with repeated slashes'
+
+  " Test: Splitting a relative path
+  AssertEqual ['foo/', 'bar'], path#split('foo/bar'), 'Handles relative paths without leading slash'
+
+  " Test: Splitting an empty path
+  AssertEqual [], path#split(''), 'Handles empty paths'
+
+  " Test: Splitting a single character path
+  AssertEqual ['a'], path#split('a'), 'Splits single character path'
+
+  " Test: Splitting a path with only slashes
+  AssertEqual ['/', '/', '/', '/'], path#split('////'), 'Handles paths with only slashes'
+
+  " Test: Splitting a path starting with multiple slashes and no trailing slash
+  AssertEqual ['/', '/', 'foo/', 'bar'], path#split('//foo/bar'), 'Handles paths starting with multiple slashes'
+
+  " Test: Splitting a path with interspersed slashes
+  AssertEqual ['/', 'foo/', '/', '/', 'bar/'], path#split('/foo///bar/'), 'Handles paths with interspersed slashes'
+
+  " Test: Splitting a path with a single trailing slash
+  AssertEqual ['/', 'foo/', 'bar/'], path#split('/foo/bar/'), 'Handles paths with a single trailing slash'
+
+  " Test: Splitting a path with multiple trailing slashes
+  AssertEqual ['/', 'foo/', 'bar/', '/'], path#split('/foo/bar//'), 'Handles paths with multiple trailing slashes'
+
+  " Test: Splitting a path with only directory names and no slashes
+  AssertEqual ['foobar'], path#split('foobar'), 'Handles paths with no slashes'
+
+  " Test: Splitting a path with mixed character types
+  AssertEqual ['/', 'foo!@#$%^&*()bar_/', '123/', 'test.txt'], path#split('/foo!@#$%^&*()bar_/123/test.txt'), 'Splits paths with mixed character types'

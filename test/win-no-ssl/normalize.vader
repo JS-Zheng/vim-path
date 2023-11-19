@@ -1,0 +1,165 @@
+Execute(Path Normalization):
+  function! s:reset_normalize_opts()
+    let g:path_normalize = {
+      \ 'rel_leading_dot': 0,
+      \ 'dot_if_empty': 0,
+      \ 'dir_trailing_sep': 0,
+    \ }
+  endfunction
+
+  call s:reset_normalize_opts()
+
+  " Test: Absolute paths with dictionary options
+  AssertEqual 'C:\dir2\', path#normalize('C:\dir\..\.\dir2\', {'dir_trailing_sep': 1}), 'Absolute paths are correctly normalized with trailing separator'
+  AssertEqual 'C:\dir2', path#normalize('C:\dir\..\.\dir2\', {'dir_trailing_sep': 0}), 'Absolute paths are correctly normalized without trailing separator'
+  AssertEqual 'C:\', path#normalize('C:\', {'dir_trailing_sep': 1}), 'Drive root is retained with trailing separator'
+  AssertEqual 'C:\', path#normalize('C:\', {'dir_trailing_sep': 0}), 'Drive root is retained without trailing separator'
+
+  " Test: Relative paths with dictionary options
+  AssertEqual 'dir2\', path#normalize('.\dir\..\.\dir2\', {'dir_trailing_sep': 1}), 'Relative paths are correctly normalized with trailing separator'
+  AssertEqual 'dir2', path#normalize('.\dir\..\.\dir2\', {'dir_trailing_sep': 0}), 'Relative paths are correctly normalized without trailing separator'
+  AssertEqual '.', path#normalize('.', {'rel_leading_dot': 1}), 'Current directory is correctly normalized with leading dot'
+  AssertEqual '', path#normalize('.', {'rel_leading_dot': 0}), 'Current directory is correctly normalized without leading dot'
+
+  " Test: Empty paths with dictionary options
+  AssertEqual '.', path#normalize('', {'dot_if_empty': 1}), 'Empty path is correctly normalized to single dot when dot_if_empty is set'
+  AssertEqual '', path#normalize('', {'dot_if_empty': 0}), 'Empty path remains empty when dot_if_empty is unset'
+
+  " Test: Leading dot with dictionary options
+  AssertEqual '.\file', path#normalize('file', {'rel_leading_dot': 1}), 'Relative paths are correctly prefixed with leading dot when rel_leading_dot is set'
+  AssertEqual 'file', path#normalize('.\file', {'rel_leading_dot': 0}), 'Leading dot is correctly stripped when rel_leading_dot is unset'
+
+  " Test: Normalize a path that ends with a separator
+  AssertEqual 'dir\', path#normalize('.\dir\', {'dir_trailing_sep': 1}), 'Paths ending with a separator maintain the separator if dir_trailing_sep is set to 1'
+  AssertEqual 'dir', path#normalize('.\dir\', {'dir_trailing_sep': 0}), 'Paths ending with a separator drop the separator if dir_trailing_sep is set to 0'
+
+  " Test: Normalize a path that doesn't end with a separator but is an existing directory
+  let dir_name = '.normalize_test_existing_dir'
+  call mkdir(dir_name, 'p')
+  AssertEqual dir_name . '\', path#normalize(dir_name, {'dir_trailing_sep': 1}), 'Existing directories get a separator if dir_trailing_sep is set to 1'
+  AssertEqual dir_name, path#normalize(dir_name, {'dir_trailing_sep': 0}), 'Existing directories don''t get a separator if dir_trailing_sep is set to 0'
+  call delete(dir_name, 'd')
+
+  " Test: Normalize a path that neither ends with a separator nor is an existing directory
+  AssertEqual 'dir', path#normalize('.\\dir', {'dir_trailing_sep': 1}), 'Non-existing paths without a trailing separator don''t get a separator even if dir_trailing_sep is set to 1'
+  AssertEqual 'dir', path#normalize('.\\dir', {'dir_trailing_sep': 0}), 'Non-existing paths without a trailing separator don''t get a separator if dir_trailing_sep is set to 0'
+
+  " Test: Miscellaneous tests with dictionary options
+  AssertEqual '..\file\', path#normalize('..\file\', {'dir_trailing_sep': 1}), 'Parent directory references are retained with trailing separator'
+  AssertEqual '..\file', path#normalize('..\file\', {'dir_trailing_sep': 0}), 'Parent directory references are retained without trailing separator'
+
+  " Test: Absolute paths with string options
+  AssertEqual 'C:\dir2\', path#normalize('C:\dir\..\.\dir2\', 't'), 'Absolute paths are correctly normalized with trailing separator using string option'
+  AssertEqual 'C:\dir2', path#normalize('C:\dir\..\.\dir2\', 'T'), 'Absolute paths are correctly normalized without trailing separator using string option'
+
+  " Test: Relative paths with string options
+  AssertEqual 'dir2\', path#normalize('.\dir\..\.\dir2\', 't'), 'Relative paths are correctly normalized with trailing separator using string option'
+  AssertEqual 'dir2', path#normalize('.\dir\..\.\dir2\', 'T'), 'Relative paths are correctly normalized without trailing separator using string option'
+
+  " Test: Empty paths with string options
+  AssertEqual '.', path#normalize('', 'e'), 'Empty path is correctly normalized to single dot using string option'
+  AssertEqual '', path#normalize('', 'E'), 'Empty path remains empty using string option'
+
+  " Test: Leading dot with string options
+  AssertEqual '.\file', path#normalize('file', 'd'), 'Relative paths are correctly prefixed with leading dot using string option'
+  AssertEqual 'file', path#normalize('.\file', 'D'), 'Leading dot is correctly stripped using string option'
+
+  " Test: Complex paths with combination of normalization options
+  AssertEqual 'C:\file', path#normalize('C:\.\dir\..\.\file\', {'rel_leading_dot': 1, 'dir_trailing_sep': 0}), 'Complex paths are correctly normalized combining multiple normalization options'
+
+  " Test: Path with only `..` and normalization settings
+  AssertEqual '..', path#normalize('..', {'rel_leading_dot': 0, 'dir_trailing_sep': 0}), 'Path with only parent directory reference is retained'
+
+  " Test: Root path with `..` and normalization settings
+  AssertEqual 'C:\', path#normalize('C:\..', {'rel_leading_dot': 0, 'dir_trailing_sep': 0}), 'Drive root with parent directory reference should normalize to drive root itself'
+
+  " Test: Combination of `.` and `..` in paths
+  AssertEqual '..\', path#normalize('.\..', {'dir_trailing_sep': 1}), 'Combination of current and parent directory references are correctly normalized with trailing separator'
+  AssertEqual '..', path#normalize('.\..', {'dir_trailing_sep': 0}), 'Combination of current and parent directory references are correctly normalized without trailing separator'
+
+  " Test: Nested `..` references.
+  AssertEqual '..\..\dir', path#normalize('..\..\dir\.\..\dir', {'rel_leading_dot': 0, 'dir_trailing_sep': 0}), 'Paths with nested parent directory references are correctly normalized'
+
+  " Test: Combination of global settings and function settings.
+  let g:path_normalize = {
+    \ 'rel_leading_dot': 1,
+    \ 'dot_if_empty': 0,
+    \ 'dir_trailing_sep': 0,
+  \ }
+  AssertEqual 'file', path#normalize('file', {'rel_leading_dot': 0}), 'Function settings correctly override global settings'
+
+  call s:reset_normalize_opts()
+
+  " Test: Multiple consecutive `..` without any valid directories
+  AssertEqual '..\..\..\', path#normalize('.\..\..\..\', {'dir_trailing_sep': 1}), 'Multiple consecutive parent directory references are retained with trailing separator'
+  AssertEqual '..\..\..', path#normalize('.\..\..\..\', {'dir_trailing_sep': 0}), 'Multiple consecutive parent directory references are retained without trailing separator'
+
+  " Test: Combination of `.` and `..` in the middle of the path
+  AssertEqual 'C:\dir1\dir3\', path#normalize('C:\dir1\.\dir2\..\dir3\', {'dir_trailing_sep': 1}), 'Current and parent directory references within the path are correctly normalized with trailing separator'
+  AssertEqual 'C:\dir1\dir3', path#normalize('C:\dir1\.\dir2\..\dir3\', {'dir_trailing_sep': 0}), 'Current and parent directory references within the path are correctly normalized without trailing separator'
+
+  " Test: Long paths with multiple separators and dot references
+  AssertEqual 'C:\a\b\c\d\e\f\g\', path#normalize('C:\.\a\b\c\\.\d\.\e\f\\g\\', {'dir_trailing_sep': 1}), 'Long paths with redundant separators and dot references are correctly normalized with trailing separator'
+  AssertEqual 'C:\a\b\c\d\e\f\g', path#normalize('C:\.\a\b\c\\.\d\.\e\f\\g\\', {'dir_trailing_sep': 0}), 'Long paths with redundant separators and dot references are correctly normalized without trailing separator'
+
+  " Test: Mixing absolute and relative paths (should not occur but testing anyway)
+  AssertEqual 'C:\dir3\file', path#normalize('C:\dir1\.\.\dir2\..\.\..\dir3\.\file', {'rel_leading_dot': 0, 'dir_trailing_sep': 0}), 'Paths mixing absolute and relative conventions are correctly normalized'
+
+  " Test: Multiple leading and trailing separators
+  AssertEqual '\dir\', path#normalize('\\\dir\\\\\', {'dir_trailing_sep': 1}), 'Paths with multiple leading and trailing separators are correctly normalized with trailing separator'
+  AssertEqual '\dir', path#normalize('\\\dir\\\\\', {'dir_trailing_sep': 0}), 'Paths with multiple leading and trailing separators are correctly normalized without trailing separator'
+
+  " Test: Handling of `.` and `..` without other path components
+  AssertEqual '.', path#normalize('.\.', {'rel_leading_dot': 1}), 'Path with repeated current directory references is correctly normalized to single dot'
+  AssertEqual '', path#normalize('.\.', {'rel_leading_dot': 0}), 'Path with repeated current directory references is normalized to empty string without leading dot'
+
+  " Test: Use of symbolic links in paths (NOTE: Assumes availability of symbolic links; might not work on all systems)
+  call system('mklink symbolic_dir real_dir')
+  AssertEqual 'symbolic_dir\file', path#normalize('symbolic_dir\file', {'dir_trailing_sep': 0}), 'Paths with symbolic links are retained'
+  call system('rmdir symbolic_dir')
+
+  " Test: Relative Path with Multiple Parent References
+  AssertEqual '..\..\..\dir', path#normalize('..\..\..\dir\', {'dir_trailing_sep': 0}), 'Relative paths with multiple parent directory references are correctly normalized'
+
+  " Test: Combining Multiple `..` with Directory Names
+  AssertEqual 'dir3', path#normalize('.\dir1\..\dir2\..\dir3\', {'dir_trailing_sep': 0}), 'Combination of directory names and multiple parent directory references are correctly normalized'
+
+  " Test: Complex Combination of Options
+  AssertEqual 'C:\dir1\dir2\file', path#normalize('C:\.\dir1\\.\dir2\\\.\.\file', {'rel_leading_dot': 1, 'dir_trailing_sep': 1, 'dot_if_empty': 1}), 'Complex combination of options produces correct normalization'
+
+  " Test: Deeply Nested Relative Paths
+  AssertEqual '..\dir1\dir2\', path#normalize('.\..\dir1\.\dir2\..\dir2\', {'dir_trailing_sep': 1}), 'Deeply nested relative paths are correctly normalized with trailing separator'
+
+  " Test: Normalization with Glob Patterns
+  AssertEqual 'C:\dir\*', path#normalize('C:\dir\\*', {'dir_trailing_sep': 0}), 'Paths with glob patterns are correctly normalized without disrupting the pattern'
+
+  " Test: Handling Edge Cases
+  AssertEqual '.', path#normalize('.\.\.\.\.\.\.', {'rel_leading_dot': 1}), 'Edge case with repeated current directory references is correctly normalized to single dot'
+  AssertEqual '..', path#normalize('.\.\..\.', {'rel_leading_dot': 0}), 'Edge case with mixed current and parent directory references is correctly normalized'
+
+
+Execute(Path Normalization for UNC Paths):
+
+  " Test: UNC Paths Normalization
+  AssertEqual '\\Server\Share\dir2\', path#normalize('\\Server\Share\dir\..\.\\dir2\', {'dir_trailing_sep': 1}), 'UNC paths are correctly normalized with trailing separator'
+  AssertEqual '\\Server\Share\dir2', path#normalize('\\Server\Share\dir\..\.\\dir2\', {'dir_trailing_sep': 0}), 'UNC paths are correctly normalized without trailing separator'
+
+  " Test: UNC Paths with Mixed Separators
+  AssertEqual '\\Server\Share\a\b\c\', path#normalize('\\Server\Share\a\b\c\.\.\\', {'dir_trailing_sep': 1}), 'UNC paths with mixed separators are correctly normalized with trailing separator'
+  AssertEqual '\\Server\Share\a\b\c', path#normalize('\\Server\Share\a\b\c\.\.\\', {'dir_trailing_sep': 0}), 'UNC paths with mixed separators are correctly normalized without trailing separator'
+
+  " Test: UNC Paths with Nested `..` References
+  AssertEqual '\\Server\Share\dir', path#normalize('\\Server\Share\dir\subdir\..\', {'dir_trailing_sep': 0}), 'UNC paths with nested parent directory references are correctly normalized'
+
+  " Test: UNC Paths with Multiple Consecutive `..` References
+  AssertEqual '\\', path#normalize('\\Server\Share\dir\..\\..\\..\\', {'dir_trailing_sep': 1}), 'UNC paths with multiple consecutive parent directory references are retained with trailing separator'
+  AssertEqual '', path#normalize('\\Server\Share\dir\..\\..\\..\\', {'dir_trailing_sep': 0}), 'UNC paths with multiple consecutive parent directory references are retained without trailing separator'
+
+  " Test: UNC Paths with Complex Relative Parts
+  AssertEqual '\\Server\Share\dir\sub\file', path#normalize('\\Server\Share\dir\.\\.\\sub\..\sub\file', {'rel_leading_dot': 0, 'dir_trailing_sep': 0}), 'Complex relative parts in UNC paths are correctly normalized'
+
+  " Test: UNC Paths with Extra Separators
+  AssertEqual '\\Server\Share\dir\sub\', path#normalize('\\Server\Share\\dir\\\\\\sub\\', {'dir_trailing_sep': 1}), 'UNC paths with extra separators are maintained'
+
+  " Test: Handling Edge Cases in UNC Paths
+  AssertEqual '\\Server\Share\sub', path#normalize('\\Server\Share\dir\..\sub', {'rel_leading_dot': 0, 'dir_trailing_sep': 0}), 'Edge cases in UNC paths are correctly normalized'

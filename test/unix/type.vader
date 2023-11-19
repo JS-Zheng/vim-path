@@ -1,0 +1,109 @@
+Execute (Path Type Detection):
+
+  " Set up a testing environment
+  function! s:SetupPathTypeTestEnvironment()
+    let test_dir = tempname()
+    call mkdir(test_dir, 'p')
+    call writefile([''], test_dir . '/testfile')
+    call mkdir(test_dir . '/testdir', 'p')
+    call system('ln -s ' . test_dir . '/testfile ' . test_dir . '/testlink')
+    return test_dir
+  endfunction
+
+  " Clean up the testing environment
+  function! s:CleanupPathTypeTestEnvironment(test_dir)
+    call delete(a:test_dir, 'rf')
+  endfunction
+
+  " Test: Checking if a path is absolute
+  AssertEqual 1, path#is_abs('/absolute/path'), 'Correctly identifies an absolute path'
+  AssertEqual 0, path#is_abs('relative/path'), 'Correctly identifies a non-absolute path'
+
+  " Test: Path starting with $HOME
+  let home_path = '$HOME/some/dir'
+  AssertEqual 0, path#is_abs(home_path), 'Recognizes $HOME-based path as not absolute before expansion'
+
+  " Test: Path starting with ~ (tilde)
+  let tilde_path = '~/some/dir'
+  AssertEqual 0, path#is_abs(tilde_path), 'Recognizes tilde-based path as not absolute before expansion'
+
+  " Test: Expanded $HOME path
+  let expanded_home_path = expand(home_path)
+  AssertEqual 1, path#is_abs(expanded_home_path), 'Recognizes expanded $HOME-based path as absolute'
+
+  " Test: Expanded tilde path
+  let expanded_tilde_path = expand(tilde_path)
+  AssertEqual 1, path#is_abs(expanded_tilde_path), 'Recognizes expanded tilde-based path as absolute'
+
+  " Test: Path starting with user's home directory
+  let home_dir_path = fnamemodify('~', ':p') . 'some/dir'
+  AssertEqual 1, path#is_abs(home_dir_path), 'Recognizes path starting with user''s home directory as absolute'
+
+  " Test: Checking if a path is a directory
+  let test_dir = s:SetupPathTypeTestEnvironment()
+  AssertEqual 1, path#is_dir(test_dir . '/testdir'), 'Correctly identifies a directory'
+  AssertEqual 0, path#is_dir(test_dir . '/testfile'), 'Correctly identifies a non-directory'
+
+  " Test: Checking if a path is a file
+  AssertEqual 1, path#is_file(test_dir . '/testfile'), 'Correctly identifies a file'
+  AssertEqual 0, path#is_file(test_dir . '/testdir'), 'Correctly identifies a non-file'
+
+  " Test: Checking if a file is readable
+  AssertEqual 1, path#is_readable_file(test_dir . '/testfile'), 'Correctly identifies a readable file'
+  let non_readable_file = test_dir . '/non_readable_file'
+  call writefile([''], non_readable_file)
+  call system('chmod -r ' . non_readable_file)
+  AssertEqual 0, path#is_readable_file(non_readable_file), 'Correctly identifies a non-readable file'
+
+  " Test: Checking if a file is writable
+  AssertEqual 1, path#is_writable_file(test_dir . '/testfile'), 'Correctly identifies a writable file'
+  let non_writable_file = test_dir . '/non_writable_file'
+  call writefile([''], non_writable_file)
+  call system('chmod -w ' . non_writable_file)
+  AssertEqual 0, path#is_writable_file(non_writable_file), 'Correctly identifies a non-writable file'
+
+  " Test: Checking if a path is a symbolic link
+  AssertEqual 1, path#is_link(test_dir . '/testlink'), 'Correctly identifies a symbolic link'
+  AssertEqual 0, path#is_link(test_dir . '/testfile'), 'Correctly identifies a non-link'
+
+  " Test: Getting the type of a path
+  AssertEqual 'dir', path#get_type(test_dir . '/testdir'), 'Correctly gets the type of a directory'
+  AssertEqual 'file', path#get_type(test_dir . '/testfile'), 'Correctly gets the type of a file'
+  AssertEqual 'link', path#get_type(test_dir . '/testlink'), 'Correctly gets the type of a symbolic link'
+
+  " Test: Absolute path with unusual characters
+  AssertEqual 1, path#is_abs('/path-with-@#$%^&*()'), 'Identifies absolute path with special characters'
+
+  " Test: Directory with nested structure
+  let nested_dir = test_dir . '/nested/dir'
+  call mkdir(nested_dir, 'p')
+  AssertEqual 1, path#is_dir(nested_dir), 'Correctly identifies a nested directory'
+
+  " Test: File with no extension
+  let file_no_ext = test_dir . '/file'
+  call writefile(['content'], file_no_ext)
+  AssertEqual 1, path#is_file(file_no_ext), 'Correctly identifies a file without extension'
+
+  " Test: Symbolic link to directory
+  let dir_link = test_dir . '/dir_link'
+  call system('ln -s ' . test_dir . '/testdir ' . dir_link)
+  AssertEqual 1, path#is_link(dir_link), 'Correctly identifies a symbolic link to a directory'
+  AssertEqual 'link', path#get_type(dir_link), 'Correctly gets the type of a symbolic link to a directory'
+
+  " Test: Readable and writable file attributes after permission changes
+  let rw_file = test_dir . '/rw_file'
+  call writefile([''], rw_file)
+  AssertEqual 1, path#is_readable_file(rw_file), 'Initially identifies file as readable'
+  AssertEqual 1, path#is_writable_file(rw_file), 'Initially identifies file as writable'
+  call system('chmod -w ' . rw_file)
+  AssertEqual 0, path#is_writable_file(rw_file), 'Identifies file as non-writable after permission change'
+  call system('chmod +w ' . rw_file)
+  AssertEqual 1, path#is_writable_file(rw_file), 'Re-identifies file as writable after restoring permissions'
+
+  " Test: File type for various special files (if applicable on your system)
+  " Note: These tests depend on the specific system and file types available.
+  " Uncomment and adjust as needed for your testing environment.
+  AssertEqual 'cdev', path#get_type('/dev/tty'), 'Correctly gets the type of a character device file'
+
+  call s:CleanupPathTypeTestEnvironment(test_dir)
+

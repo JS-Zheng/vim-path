@@ -1,0 +1,91 @@
+Execute (Path Joining):
+
+  " Test: Join two simple path segments
+  AssertEqual 'foo/bar', path#join(['foo', 'bar']), 'Two simple segments are joined correctly'
+
+  " Test: Handle trailing separator in first segment
+  AssertEqual 'foo/bar', path#join(['foo/', 'bar']), 'Trailing separator in first segment is handled correctly'
+
+  " Test: Absolute path in second segment causes previous segments to be ignored
+  AssertEqual '/bar', path#join(['foo', '/bar']), 'Absolute path in second segment causes previous segments to be ignored'
+
+  " Test: Handle trailing separator in last segment
+  AssertEqual 'foo/bar/', path#join(['foo', 'bar/']), 'Trailing separator in last segment is retained'
+
+  " Test: Empty last component adds a separator
+  AssertEqual 'foo/bar/', path#join(['foo', 'bar', '']), 'Empty last component causes a separator to be added'
+
+  " Test: Multiple segments with a mix of separators
+  AssertEqual '/baz', path#join(['foo/', 'bar', '/baz']), 'Multiple segments with a mix of separators are joined correctly'
+
+  " Test: Absolute path in middle segment
+  AssertEqual '/baz/qux', path#join(['foo', '/baz', 'qux']), 'Absolute path in middle segment causes previous segments to be ignored'
+
+  " Test: Only a separator returns a separator
+  AssertEqual '/', path#join(['/']), 'Only a separator returns a separator'
+
+  " Test: Empty components are ignored except for the last one
+  AssertEqual 'foo/bar/', path#join(['foo', '', 'bar', '']), 'Empty components are ignored except for the last one'
+
+  " Test: Handles white spaces within path components
+  AssertEqual 'foo bar/baz qux', path#join(['foo bar', 'baz qux']), 'Handles spaces within path components'
+
+  " Test: Joining with segments containing only whitespace or separators
+  AssertEqual 'foo/ /bar/   ', path#join(['foo', ' ', 'bar', '   ']), 'Handles segments with only spaces and separators'
+
+  " Test: Absolute path in the middle segment but relative paths follow
+  AssertEqual '/bar/baz/qux', path#join(['foo', '/bar', 'baz', 'qux']), 'Absolute path in middle segment with following relative paths'
+
+  " Test: Only absolute paths in all segments
+  AssertEqual '/qux', path#join(['/foo', '/bar', '/baz', '/qux']), 'Handles only absolute paths in all segments'
+
+  " Test: Joining with segments that are dots or dot-dots
+  AssertEqual 'foo/./bar/../baz', path#join(['foo', './', 'bar', '../', 'baz']), 'Handles segments as dots or dot-dots'
+
+  " Test: Joining with a single dot at the end
+  AssertEqual 'foo/bar/.', path#join(['foo', 'bar', '.']), 'Handles a single dot at the end'
+
+  " Test: Only separators as segments
+  AssertEqual '/', path#join(['/', '/', '/']), 'Handles only separators as segments'
+
+  " Test: Mixed of normal segments and only separators
+  AssertEqual '/', path#join(['/', 'bar', '/']), 'Handles a mix of normal segments and only separators'
+
+  " Test: Joining an empty list
+  AssertEqual '', path#join([]), 'Handles an empty list of segments'
+
+  " Test: Joining with special characters in segment names
+  AssertEqual 'foo$/bar#*?', path#join(['foo$', 'bar#*?']), 'Handles special characters in segment names'
+
+  " Test: Maintains extra slashes in the middle of the segments
+  AssertEqual 'foo///bar', path#join(['foo///', 'bar']), 'Maintains extra slashes in the middle of segments'
+
+  " Test: Path segment starts and ends with multiple separators
+  AssertEqual 'foo/////bar///baz', path#join(['foo/////', 'bar///', 'baz']), 'Handles segments starting and ending with multiple separators'
+
+  " Test: Empty strings as segments in between other segments
+  AssertEqual 'foo/bar/baz', path#join(['foo', '', 'bar', '', 'baz']), 'Handles empty strings as segments'
+
+  " Test: Joining with only whitespace strings as segments
+  AssertEqual 'foo/ /bar/ /baz', path#join(['foo', ' ', 'bar', ' ', 'baz']), 'Handles only whitespace strings as segments'
+
+  " Test: Absolute path following an empty segment
+  AssertEqual '/bar', path#join(['', '/bar']), 'Handles absolute path following an empty segment'
+
+  " Test: Joining segments with mixed separators and whitespaces
+  AssertEqual '/bar/', path#join(['foo/', ' ', '/bar/']), 'Handles segments with mixed separators and whitespaces'
+
+  " Test: Joining with segments that only contain dots or dot-dots
+  AssertEqual 'foo/././bar/../..', path#join(['foo', '.', '.', 'bar', '..', '..']), 'Handles segments that only contain dots or dot-dots'
+
+  " Test: Absolute path segment in between two normal segments
+  AssertEqual '/bar/baz', path#join(['foo', '/bar', 'baz']), 'Handles an absolute path segment in between two normal segments'
+
+  " Test: Multiple absolute paths with some segments ending in separators
+  AssertEqual '/baz/', path#join(['/foo/', '/bar', '/baz/']), 'Handles multiple absolute paths with some segments ending in separators'
+
+  " Test: Joining with segments containing various special characters
+  AssertEqual 'foo$/bar!#*/', path#join(['foo$', 'bar!#*', '']), 'Handles segments with various special characters'
+
+  " Test: Multiple separators at the start and end of segments
+  AssertEqual '////foo/bar////', path#join(['////foo', 'bar////']), 'Maintains multiple separators at start and end of segments'

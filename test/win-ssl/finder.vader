@@ -1,0 +1,142 @@
+Execute (Path Finder for Windows without shellslash):
+
+  " Set up a testing environment
+  function! s:SetupTestEnvironment() abort
+    let test_dir = tempname()
+    call mkdir(test_dir .. '/project/.git', 'p')
+    call mkdir(test_dir .. '/project/sub-project/.git', 'p')
+    call mkdir(test_dir .. '/project/svn-project/.svn', 'p')
+    call mkdir(test_dir .. '/project/svn-project/foo/bar', 'p')
+    return test_dir
+  endfunction
+
+  " Clean up the testing environment
+  function! s:CleanupTestEnvironment(test_dir) abort
+    call delete(a:test_dir, 'rf')
+  endfunction
+
+  " Test: Top-down search for a marker
+  let test_dir = s:SetupTestEnvironment()
+  let finder = path#finder#({'order': 'top-down', 'markers': ['.git']})
+  let [found_path, found_marker] = finder.find(test_dir .. '/project/sub-project/file.txt')
+  AssertEqual test_dir .. '/project', found_path, 'Finds .git in top-down search'
+  AssertEqual '.git', found_marker, 'Correct marker found in top-down search'
+  call s:CleanupTestEnvironment(test_dir)
+
+  " Test: Bottom-up search for a marker
+  let test_dir = s:SetupTestEnvironment()
+  let finder = path#finder#({'order': 'bottom-up', 'markers': ['.git']})
+  let [found_path, found_marker] = finder.find(test_dir .. '/project/sub-project/file.txt')
+  AssertEqual test_dir .. '/project/sub-project', found_path, 'Finds .git in bottom-up search'
+  AssertEqual '.git', found_marker, 'Correct marker found in bottom-up search'
+  call s:CleanupTestEnvironment(test_dir)
+
+  " Test: No marker found
+  let test_dir = s:SetupTestEnvironment()
+  let finder = path#finder#({'order': 'top-down', 'markers': ['.nonexistent']})
+  let [found_path, _] = finder.find(test_dir .. '/otherpath')
+  AssertEqual '', found_path, 'No marker found when non-existent'
+  call s:CleanupTestEnvironment(test_dir)
+
+  " Test: Exclude paths
+  let test_dir = s:SetupTestEnvironment()
+  let finder = path#finder#({'order': 'top-down', 'excludes': [test_dir .. '/project/'], 'markers': ['.git']})
+  let [found_path, _] = finder.find(test_dir .. '/project/sub-project/file.txt')
+  AssertEqual test_dir .. '/project/sub-project', found_path, 'Path excluded from search'
+  call s:CleanupTestEnvironment(test_dir)
+
+  " Test: Searching in a Windows path with multiple markers
+  let test_dir = s:SetupTestEnvironment()
+  let finder = path#finder#({'order': 'bottom-up', 'markers': ['.git', '.svn', 'package.json']})
+  let [found_path, found_marker] = finder.find(test_dir .. '/project/svn-project/foo/bar')
+  AssertEqual test_dir .. '/project/svn-project', found_path, 'Finds first marker among multiple markers'
+  AssertEqual '.svn', found_marker, 'Correct marker (.svn) found in top-down search with multiple markers '
+  call s:CleanupTestEnvironment(test_dir)
+
+  " Test: Searching in non-existent directories
+  let finder = path#finder#({'order': 'top-down', 'markers': ['.git']})
+  let [found_path, _] = finder.find('C:/nonexistent/directory')
+  AssertEqual '', found_path, 'Handles non-existent directories gracefully'
+
+  " Test: Nested directories with multiple marker types
+  let test_dir = s:SetupTestEnvironment()
+  call mkdir(test_dir . '/project/src/.idea', 'p')
+  call writefile([''], test_dir . '/project/src/package.json')
+  let finder = path#finder#({'order': 'top-down', 'markers': ['.svn', '.idea', 'package.json']})
+  let [found_path, found_marker] = finder.find(test_dir . '/project/src/main.js')
+  AssertEqual test_dir . '/project/src', found_path, 'Finds .idea in nested directory'
+  AssertEqual '.idea', found_marker, 'Correct marker (.idea) found in nested directory'
+  call s:CleanupTestEnvironment(test_dir)
+
+  " Test: Marker at the root of the search path
+  let test_dir = s:SetupTestEnvironment()
+  call writefile([''], test_dir . '/.root')
+  let finder = path#finder#({'order': 'bottom-up', 'markers': ['.root']})
+  let [found_path, found_marker] = finder.find(test_dir . '/project/file.txt')
+  AssertEqual test_dir, found_path, 'Finds .root at the root of the search path'
+  AssertEqual '.root', found_marker, 'Correct marker (.root) found at the root of the search path'
+  call s:CleanupTestEnvironment(test_dir)
+
+  " Test: Marker in the parent directory
+  let test_dir = s:SetupTestEnvironment()
+  call writefile([''], test_dir . '/project/.vscode')
+  let finder = path#finder#({'order': 'bottom-up', 'markers': ['.vscode']})
+  let [found_path, found_marker] = finder.find(test_dir . '/project/sub-project/file.txt')
+  AssertEqual test_dir . '/project', found_path, 'Finds .vscode in the parent directory'
+  AssertEqual '.vscode', found_marker, 'Correct marker (.vscode) found in the parent directory'
+  call s:CleanupTestEnvironment(test_dir)
+
+  " Test: Multiple markers in different subdirectories
+  let test_dir = s:SetupTestEnvironment()
+  call mkdir(test_dir . '/project/backend/.hg', 'p')
+  call mkdir(test_dir . '/project/frontend/.node_modules', 'p')
+  let finder = path#finder#({'order': 'top-down', 'markers': ['.hg', '.node_modules']})
+  let [found_path_backend, found_marker_backend] = finder.find(test_dir . '/project/backend/utils.js')
+  let [found_path_frontend, found_marker_frontend] = finder.find(test_dir . '/project/frontend/app.js')
+  AssertEqual test_dir . '/project/backend', found_path_backend, 'Finds .hg in backend directory'
+  AssertEqual '.hg', found_marker_backend, 'Correct marker (.hg) found in backend directory'
+  AssertEqual test_dir . '/project/frontend', found_path_frontend, 'Finds .node_modules in frontend directory'
+  AssertEqual '.node_modules', found_marker_frontend, 'Correct marker (.node_modules) found in frontend directory'
+  call s:CleanupTestEnvironment(test_dir)
+
+Execute (Unicode Path Finder):
+  " Set up a testing environment with Unicode paths and markers
+  function! s:SetupUnicodeTestEnvironment()
+    let test_dir = tempname()
+    call mkdir(test_dir . '/專案/❤️', 'p')
+    call mkdir(test_dir . '/專案/子專案', 'p')
+    call mkdir(test_dir . '/專案/子專案/📝', 'p')
+    call writefile([''], test_dir . '/專案/子專案/設定檔.json')
+    call writefile([''], test_dir . '/專案/子專案/🔞')
+    call writefile([''], test_dir . '/專案/子專案/📝/設定檔.json')
+    call mkdir(test_dir . '/專案/子專案/文件', 'p')
+    return test_dir
+  endfunction
+
+  " Clean up the testing environment
+  function! s:CleanupTestEnvironment(test_dir) abort
+    call delete(a:test_dir, 'rf')
+  endfunction
+
+  " Test: Top-down search for a Unicode marker
+  let test_dir = s:SetupUnicodeTestEnvironment()
+  let finder = path#finder#({'order': 'top-down', 'markers': ['設定檔.json']})
+  let [found_path, found_marker] = finder.find(test_dir . '/專案/子專案/文件/文件.txt')
+  AssertEqual test_dir . '/專案/子專案', found_path, 'Finds 設定檔.json in top-down search with Unicode path'
+  AssertEqual '設定檔.json', found_marker, 'Correct marker found in top-down search with Unicode path'
+  call s:CleanupTestEnvironment(test_dir)
+
+  " Test: Bottom-up search for a Unicode marker
+  let test_dir = s:SetupUnicodeTestEnvironment()
+  let finder = path#finder#({'order': 'bottom-up', 'markers': ['🔞']})
+  let [found_path, found_marker] = finder.find(test_dir . '/專案/子專案/📝/文件.txt')
+  AssertEqual test_dir . '/專案/子專案', found_path, 'Finds 🔞 in bottom-up search with Unicode path'
+  AssertEqual '🔞', found_marker, 'Correct marker (🔞) found in bottom-up search with Unicode path'
+  call s:CleanupTestEnvironment(test_dir)
+
+  " Test: No marker found in Unicode path
+  let test_dir = s:SetupUnicodeTestEnvironment()
+  let finder = path#finder#({'order': 'top-down', 'markers': ['.nonexistent']})
+  let [found_path, _] = finder.find(test_dir . '/不存在的目錄')
+  AssertEqual '', found_path, 'No marker found when non-existent in Unicode path'
+  call s:CleanupTestEnvironment(test_dir)

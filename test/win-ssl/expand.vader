@@ -1,0 +1,80 @@
+Execute(Path Expansion):
+
+  " Test: Expansion of environment variables in the %VAR_NAME% format
+  let $TEST_ENV_VAR = 'C:/TestPath'
+  AssertEqual 'C:/TestPath/file', path#expand('%TEST_ENV_VAR%/file'), '%VAR_NAME% is correctly expanded'
+  AssertEqual 'C:/TestPath/file', path#expand('$TEST_ENV_VAR/file'), '%VAR_NAME% is correctly expanded'
+  unlet $TEST_ENV_VAR
+
+  " Test: Expansion of home directory
+  AssertEqual expand('~') .. '/file', path#expand('~/file'), 'Home directory (~) is correctly expanded to $HOME'
+
+  " Test: Mixed expansions
+  let $MIXED_TEST_ENV_VAR = 'MixedTestPath'
+  AssertEqual expand('~') .. '/MixedTestPath/file', path#expand('~/%MIXED_TEST_ENV_VAR%/file'), 'Mixed expansion of ~ and %VAR_NAME% works correctly'
+  AssertEqual expand('~') .. '/MixedTestPath/file', path#expand('~/$MIXED_TEST_ENV_VAR/file'), 'Mixed expansion of ~ and %VAR_NAME% works correctly'
+  unlet $MIXED_TEST_ENV_VAR
+
+  " Test: Chained environment variables
+  let $CHAIN_PATH_1 = 'Part1'
+  let $CHAIN_PATH_2 = 'Part2'
+  let $CHAIN_PATH_3 = 'Part3'
+  AssertEqual 'Part1/Part2/Part3/file', path#expand('%CHAIN_PATH_1%/%CHAIN_PATH_2%/%CHAIN_PATH_3%/file'), 'Chained environment variables are correctly expanded'
+  AssertEqual 'Part1/Part2/Part3/file', path#expand('$CHAIN_PATH_1/$CHAIN_PATH_2/$CHAIN_PATH_3/file'), 'Chained environment variables are correctly expanded'
+  unlet $CHAIN_PATH_1 $CHAIN_PATH_2 $CHAIN_PATH_3
+
+  " Test: Non-existing environment variables
+  AssertEqual '%NON_EXISTING_VAR%/file', path#expand('%NON_EXISTING_VAR%/file'), 'Non-existing environment variables are not expanded and left as-is'
+  AssertEqual '$NON_EXISTING_VAR/file', path#expand('$NON_EXISTING_VAR/file'), 'Non-existing environment variables are not expanded and left as-is'
+  AssertEqual '${NON_EXISTING_VAR}/file', path#expand('${NON_EXISTING_VAR}/file'), 'Non-existing environment variables are not expanded and left as-is'
+
+  " Test: Mixed ~ and %VAR%
+  let $PROJECT_DIR = 'Projects'
+  AssertEqual expand('~') .. '/Projects/docs', path#expand('~/%PROJECT_DIR%/docs'), 'Combination of ~ and %VAR_NAME% expansions work correctly'
+  AssertEqual expand('~') .. '/Projects/docs', path#expand('~/$PROJECT_DIR/docs'), 'Combination of ~ and %VAR_NAME% expansions work correctly'
+  unlet $PROJECT_DIR
+
+  " Test: Complex paths with ~ and environment variables
+  let $DATA_DIR = 'Data'
+  let $SUB_DIR = 'SubDir'
+  AssertEqual expand('~') .. '/Data/SubDir/file.txt', path#expand('~/$DATA_DIR/$SUB_DIR/file.txt'), 'Complex paths with multiple expansions are handled correctly'
+  unlet $DATA_DIR $SUB_DIR
+
+  " Test: Paths with non-standard characters (e.g. spaces, dashes)
+  let $SPACE_DIR = 'Space Dir'
+  AssertEqual 'Space Dir/file.txt', path#expand('%SPACE_DIR%/file.txt'), 'Paths with spaces in directory names are expanded correctly'
+  AssertEqual 'Space Dir/file.txt', path#expand('$SPACE_DIR/file.txt'), 'Paths with spaces in directory names are expanded correctly'
+  unlet $SPACE_DIR
+
+  let $DASH_DIR = 'Dash-Dir'
+  AssertEqual 'Dash-Dir/file.txt', path#expand('%DASH_DIR%/file.txt'), 'Paths with dashes in directory names are expanded correctly'
+  AssertEqual 'Dash-Dir/file.txt', path#expand('$DASH_DIR/file.txt'), 'Paths with dashes in directory names are expanded correctly'
+  unlet $DASH_DIR
+
+  " Test: Special vim characters and sequences
+  " %, #, < should not be expanded in Windows paths
+  AssertEqual '%file', path#expand('%file'), 'The % character is not expanded'
+  AssertEqual '#file', path#expand('#file'), 'The # character is not expanded'
+  AssertEqual '<cfile>', path#expand('<cfile>'), 'The < sequence is not expanded'
+
+  " Test: Wildcards
+  " *, ? should not be expanded in Windows paths
+  let $DIR_NAME = 'Dir*'
+  AssertEqual 'Dir*/file', path#expand('%DIR_NAME%/file'), 'The * character is not expanded as a wildcard'
+  AssertEqual 'Dir*/file', path#expand('$DIR_NAME/file'), 'The * character is not expanded as a wildcard'
+  unlet $DIR_NAME
+
+  let $FILE_NAME = 'File?'
+  AssertEqual 'File?', path#expand('%FILE_NAME%'), 'The ? character is not expanded as a wildcard'
+  AssertEqual 'File?', path#expand('$FILE_NAME'), 'The ? character is not expanded as a wildcard'
+  unlet $FILE_NAME
+
+  " Test: Special vim sequences that should not be expanded
+  " :p, :h, :t should not be expanded in Windows paths
+  AssertEqual ':pfile', path#expand(':pfile'), 'The :p sequence is not expanded'
+  AssertEqual ':hfile', path#expand(':hfile'), 'The :h sequence is not expanded'
+  AssertEqual ':tfile', path#expand(':tfile'), 'The :t sequence is not expanded'
+
+  " Test: Path with unicode characters
+  AssertEqual 'C:/路徑/文件.txt', path#expand('C:/路徑/文件.txt'), 'Handles path with unicode characters'
+

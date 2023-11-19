@@ -1,0 +1,175 @@
+Execute (Path Constructor):
+  " Initialize default constructor options before each test
+  let g:path_constructor_opts = {
+    \ 'expand': 0,
+    \ 'normalize': 0,
+    \ 'resolve': 0
+  \ }
+
+  " Test: Default behavior with no arguments
+  AssertEqual '.', path#(), 'Returns current directory for no arguments'
+
+  " Test: Path as a string
+  AssertEqual '/home/user', path#('/home/user'), 'Handles simple string path'
+
+  " Test: Path as a dictionary
+  let dict_path = {'dir': '/home', 'base': 'user'}
+  AssertEqual '/home/user', path#(dict_path), 'Handles dictionary path'
+
+  " Test: Path as a list
+  let list_path = ['/home', 'user']
+  AssertEqual '/home/user', path#(list_path), 'Handles list path'
+
+  " Test: Expanding environment variables
+  let $TEST_VAR = '/home'
+  AssertEqual '/home/user', path#('$TEST_VAR/user', {'expand': 1}), 'Expands environment variables'
+
+  " Test: Normalizing the path
+  AssertEqual '/home/user', path#('/home/./user', {'normalize': 1}), 'Normalizes the path'
+
+  function! s:SetupSymlinkTestEnvironment()
+    let test_dir = fnamemodify(tempname(), ':h')
+    let test_dir = resolve(test_dir)
+    call mkdir(test_dir, 'p')
+    let target_dir = test_dir . '/target'
+    call mkdir(target_dir, 'p')
+    let symlink_path = test_dir . '/symlink'
+    call system('ln -s ' . target_dir . ' ' . symlink_path)
+    return [symlink_path, target_dir]
+  endfunction
+
+  " Clean up the temporary environment
+  function! s:CleanupSymlinkTestEnvironment(test_env)
+    call delete(a:test_env[0])  " Delete the symlink
+    call delete(a:test_env[1], 'rf')  " Delete the target directory
+  endfunction
+
+  " Test: Resolving symbolic links
+  let test_env = s:SetupSymlinkTestEnvironment()
+  let symlink_path = test_env[0]
+  let target_dir = test_env[1]
+  let result = path#(symlink_path, {'resolve': 1})
+  AssertEqual target_dir, path#(symlink_path, {'resolve': 1}), 'Resolves symbolic links'
+  call s:CleanupSymlinkTestEnvironment(test_env)
+
+  " Test: Handling invalid arguments
+  AssertThrows path#(100)
+
+  " Test: Using string options
+  AssertEqual '/home/user', path#('/home/./user', 'en'), 'Handles string options for normalize and expand'
+
+  " Test: Combining expand and normalize options
+  let $TEST_PATH = '/unique-path/../unique-path'
+  AssertEqual '/unique-path/user', path#('$TEST_PATH/user', 'en'), 'Expands and normalizes the path'
+
+  " Test: Path with trailing slash
+  AssertEqual '/unique-path/user', path#('/unique-path/user/', 'n'), 'Normalizes path with trailing slash'
+
+  " Test: Path with multiple slashes
+  AssertEqual '/unique-path/user', path#('/unique-path//user', 'n'), 'Normalizes path with multiple slashes'
+
+  " Test: Path with complex relative parts
+  AssertEqual '/unique-path/user', path#('/unique-path/././../unique-path/user', 'n'), 'Normalizes complex relative path'
+
+  " Test: Using resolve option on a non-symlink path
+  AssertEqual '/unique-path/user', path#('/unique-path/user', 'r'), 'Resolve has no effect on non-symlink path'
+
+  " Test: Path as an empty list
+  AssertEqual '.', path#([]), 'Handles empty list path'
+
+  " Test: Path as a list with empty elements
+  let list_path_with_empty_elements = ['/unique-path', '', 'user']
+  AssertEqual '/unique-path/user', path#(list_path_with_empty_elements, 'n'), 'Handles list path with empty elements'
+
+  " Test: Dictionary path with missing keys
+  let incomplete_dict_path = {'dir': '/unique-path'}
+  AssertEqual '/unique-path', path#(incomplete_dict_path), 'Handles incomplete dictionary path'
+
+  " Test: Disabling expansion of environment variables
+  let $TEST_PATH = '/unique-path'
+  AssertEqual '$TEST_PATH/user', path#('$TEST_PATH/user', 'E'), 'Does not expand environment variables when disabled'
+
+  " Test: Disabling path normalization
+  AssertEqual '/unique-path/../unique-path/user', path#('/unique-path/../unique-path/user', 'N'), 'Does not normalize the path when disabled'
+
+  " Test: Disabling symbolic link resolution
+  let test_env = s:SetupSymlinkTestEnvironment()
+  let symlink_path = test_env[0]
+  let target_dir = test_env[1]
+  AssertEqual symlink_path, path#(symlink_path, 'R'), 'Does not resolve symbolic links when disabled'
+  call s:CleanupSymlinkTestEnvironment(test_env)
+
+  " Test: Using uppercase options for no operations
+  AssertEqual '/unique-path/../unique-path/user', path#('/unique-path/../unique-path/user', 'ENR'), 'No operations are performed with uppercase options'
+
+  " Test: Complex path with environment variables and relative segments
+  let $TEST_PATH = '/unique-env-path'
+  AssertEqual '/unique-env-path/final', path#('$TEST_PATH/../unique-env-path/./final', 'en'), 'Handles complex path with environment variables and relative segments'
+
+  " Test: Path with unusual characters
+  AssertEqual '/unique-path/!@#$%^&*()_+', path#('/unique-path/!@#$%^&*()_+', 'n'), 'Handles path with unusual characters'
+
+  " Test: Normalizing a deeply nested relative path
+  AssertEqual '/unique-path/a/final', path#('/unique-path/a/b/c/../../d/../././e/../final', 'n'), 'Normalizes a deeply nested relative path'
+
+  " Test: Disable normalization and resolution in a complex path
+  let test_env = s:SetupSymlinkTestEnvironment()
+  let complex_path = test_env[0] . '/../some/./nested/../path'
+  AssertEqual complex_path, path#(complex_path, 'NR'), 'Disables normalization and resolution in a complex path'
+  call s:CleanupSymlinkTestEnvironment(test_env)
+
+  " Test: Mixed usage of lowercase and uppercase options
+  let $TEST_PATH = '/unique-env-path'
+  AssertEqual '/unique-env-path/../unique-env-path/./final', path#('$TEST_PATH/../unique-env-path/./final', 'eN'), 'Mixed usage of lowercase and uppercase options'
+
+  " Test: Path as a list with varied separators
+  let mixed_separator_path = ['/unique-path', 'a//b', 'c///d/e']
+  AssertEqual '/unique-path/a/b/c/d/e', path#(mixed_separator_path, 'n'), 'Handles mixed separators in list path'
+
+  " Test: Dictionary path with complex base and dir
+  let complex_dict_path = {'dir': '/unique-path/a/..', 'base': './b'}
+  AssertEqual '/unique-path/b', path#(complex_dict_path, 'n'), 'Handles complex base and dir in dictionary path'
+
+  " Test: Expanding and normalizing a path with multiple environment variables
+  let $VAR1 = '/unique-path1'
+  let $VAR2 = '/unique-path2'
+  AssertEqual '/unique-path1/unique-path2', path#('$VAR1/$VAR2/../unique-path2', 'en'), 'Expands and normalizes path with multiple environment variables'
+
+  " Test: Path with mixed case environment variables
+  let $MiXeD_CaSe_VAR = '/mixedCasePath'
+  AssertEqual '/mixedCasePath/final', path#('$MiXeD_CaSe_VAR/final', 'e'), 'Handles path with mixed case environment variables'
+
+  " Test: Path containing dots and spaces
+  AssertEqual '/unique-path/.../with space', path#('/unique-path/.../with space', 'n'), 'Handles path with dots and spaces'
+
+  " Test: Path with consecutive separators and dots
+  AssertEqual '/a/b', path#('/a///.//b', 'n'), 'Normalizes path with consecutive separators and dots'
+
+  " Test: Resolving symbolic links in a complex path
+  let test_env = s:SetupSymlinkTestEnvironment()
+  let complex_symlink_path = test_env[0] . '/../../some/nested/symlink'
+  let expected_path = fnamemodify(test_env[1], ':h:h') . '/some/nested/symlink'
+  AssertEqual expected_path, path#(complex_symlink_path, 'r'), 'Resolves symbolic links in a complex path'
+  call s:CleanupSymlinkTestEnvironment(test_env)
+
+  " Test: Path with multiple mixed options
+  let $TEST_VAR1 = '/path1'
+  let $TEST_VAR2 = '/path2/../path3'
+  AssertEqual '/path1/path3/final', path#('$TEST_VAR1/$TEST_VAR2/final', 'enR'), 'Handles path with multiple mixed options'
+
+  " Test: Path as a list with nested directories
+  let nested_list_path = ['/unique-path', 'nested/dir', 'subdir']
+  AssertEqual '/unique-path/nested/dir/subdir', path#(nested_list_path, 'n'), 'Handles nested directories in list path'
+
+  " Test: Dictionary path with empty values
+  let empty_dict_path = {'dir': '', 'base': ''}
+  AssertEqual '.', path#(empty_dict_path, 'n'), 'Handles dictionary path with empty values'
+
+  " Test: Path normalization with ignored resolve option
+  let symlink_path = s:SetupSymlinkTestEnvironment()[0]
+  let complex_nested_path = symlink_path .. '/a/b/c/../nested/../../nested/./path'
+  let expected = symlink_path .. '/a/nested/path'
+  AssertEqual expected, path#(complex_nested_path, 'nR'), 'Normalizes complex nested path while ignoring resolve'
+
+  " Test: Path with unicode characters
+  AssertEqual '/路徑/子目錄/文件.txt', path#('/路徑/./子目錄/文件.txt', 'n'), 'Handles path with unicode characters'

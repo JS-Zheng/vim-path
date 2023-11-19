@@ -1,0 +1,121 @@
+Execute (Path Parsing):
+
+  " Test: path#parse for a typical file path
+  let parsed = path#parse('/home/user/project/file.txt')
+  AssertEqual '/', parsed['root'], 'Correctly identifies the root'
+  AssertEqual '/home/user/project', parsed['dir'], 'Correctly identifies the directory'
+  AssertEqual 'file.txt', parsed['base'], 'Correctly identifies the base'
+  AssertEqual 'file', parsed['name'], 'Correctly identifies the name'
+  AssertEqual 'txt', parsed['ext'], 'Correctly identifies the extension'
+
+  " Test: path#get_basename
+  AssertEqual 'file.txt', path#get_basename('/home/user/project/file.txt'), 'Correctly gets the basename'
+
+  " Test: path#get_dir with and without ignoring trailing separator
+  AssertEqual '/home/user/project', path#get_dir('/home/user/project/file.txt'), 'Correctly gets the directory'
+  AssertEqual '/home/user/project', path#get_dir('/home/user/project/file.txt/', 1), 'Correctly gets the directory ignoring trailing separator'
+  AssertEqual '/home/user/project/file.txt', path#get_dir('/home/user/project/file.txt/', 0), 'Correctly gets the directory considering trailing separator'
+
+  " Test: path#get_name
+  AssertEqual 'file', path#get_name('/home/user/project/file.txt'), 'Correctly gets the name'
+
+  " Test: path#get_ext
+  AssertEqual 'txt', path#get_ext('/home/user/project/file.txt'), 'Correctly gets the extension'
+
+  " Test: path#get_ext for a file with no extension
+  AssertEqual '', path#get_ext('/home/user/document'), 'Correctly gets no extension for a file without extension'
+
+  " Test: path#get_basename for a file with no extension
+  AssertEqual 'document', path#get_basename('/home/user/document'), 'Correctly gets the basename for a file without extension'
+
+  " Test: path#get_ext for a file with multiple extensions
+  AssertEqual 'gz', path#get_ext('/home/user/archive.tar.gz'), 'Correctly gets the last extension for a file with multiple extensions'
+
+  " Test: path#get_basename for a file with multiple extensions
+  AssertEqual 'archive.tar.gz', path#get_basename('/home/user/archive.tar.gz'), 'Correctly gets the basename for a file with multiple extensions'
+
+  " Test: path#get_ext for a hidden file with extension
+  AssertEqual 'config', path#get_ext('/home/user/.vimrc.config'), 'Correctly gets the extension for a hidden file with extension'
+
+  " Test: path#get_basename for a hidden file with extension
+  AssertEqual '.vimrc.config', path#get_basename('/home/user/.vimrc.config'), 'Correctly gets the basename for a hidden file with extension'
+
+  " Test: path#get_ext for a hidden file without extension
+  AssertEqual '', path#get_ext('/home/user/.vimrc'), 'Correctly gets no extension for a hidden file without extension'
+
+  " Test: path#get_basename for a hidden file without extension
+  AssertEqual '.vimrc', path#get_basename('/home/user/.vimrc'), 'Correctly gets the basename for a hidden file without extension'
+
+  " Test: path#get_ext for a file with complex name
+  AssertEqual 'gz', path#get_ext('/home/user/data.backup.2021.tar.gz'), 'Correctly gets the last extension for a file with complex name'
+
+  " Test: path#get_basename for a file with complex name
+  AssertEqual 'data.backup.2021.tar.gz', path#get_basename('/home/user/data.backup.2021.tar.gz'), 'Correctly gets the basename for a file with complex name'
+
+  " Test: path#get_ext for a file with unicode characters
+  AssertEqual '文件', path#get_ext('/家目錄/維護.文件'), 'Correctly gets the extension for a file with unicode characters'
+
+  " Test: path#get_basename for a file with unicode characters
+  AssertEqual '維護.文件', path#get_basename('/家目錄/維護.文件'), 'Correctly gets the basename for a file with unicode characters'
+
+  " Test: path#get_ext for a file with special characters
+  AssertEqual 'txt', path#get_ext('/home/user/notes & reminders.txt'), 'Correctly gets the extension for a file with special characters'
+
+  " Test: path#get_basename for a file with special characters
+  AssertEqual 'notes & reminders.txt', path#get_basename('/home/user/notes & reminders.txt'), 'Correctly gets the basename for a file with special characters'
+
+  " Test: path#get_root
+  AssertEqual '/', path#get_root('/home/user/project'), 'Correctly identifies root for an absolute path'
+  AssertEqual '', path#get_root('home/user/project'), 'Correctly identifies root for a relative path'
+
+  " Test: path#get_basename for a directory
+  AssertEqual 'project', path#get_basename('/home/user/project/'), 'Correctly gets the basename for a directory'
+
+  " Test: path#get_basename for a root directory
+  AssertEqual '', path#get_basename('/'), 'Correctly gets the basename for the root directory'
+
+  " Test: path#parse for a directory path
+  let parsed_dir = path#parse('/home/user/project/')
+  AssertEqual '/', parsed_dir['root'], 'Correctly identifies the root for a directory'
+  AssertEqual '/home/user/project', parsed_dir['dir'], 'Correctly identifies the directory for a directory'
+  AssertEqual 'project', parsed_dir['base'], 'Correctly identifies the base for a directory'
+  AssertEqual 'project', parsed_dir['name'], 'Correctly identifies the name for a directory'
+  AssertEqual '', parsed_dir['ext'], 'Correctly identifies the extension for a directory'
+
+  " Test: path#parse for a path with no extension
+  let parsed_no_ext = path#parse('/home/user/project/file')
+  AssertEqual 'file', parsed_no_ext['base'], 'Correctly identifies the base for a file with no extension'
+  AssertEqual 'file', parsed_no_ext['name'], 'Correctly identifies the name for a file with no extension'
+  AssertEqual '', parsed_no_ext['ext'], 'Correctly identifies the extension for a file with no extension'
+
+  " Test: path#parse for a complex path with multiple extensions
+  let complex_path = '/home/user/project/archive.tar.gz'
+  let parsed_complex = path#parse(complex_path)
+  AssertEqual '/home/user/project', parsed_complex['dir'], 'Correctly identifies the directory for complex path'
+  AssertEqual 'archive.tar.gz', parsed_complex['base'], 'Correctly identifies the base for complex path'
+  AssertEqual 'archive.tar', parsed_complex['name'], 'Correctly identifies the name for complex path'
+  AssertEqual 'gz', parsed_complex['ext'], 'Correctly identifies the extension for complex path'
+
+  " Test: path#parse for a hidden file
+  let hidden_file = '/home/user/.hidden'
+  let parsed_hidden = path#parse(hidden_file)
+  AssertEqual '/home/user', parsed_hidden['dir'], 'Correctly identifies the directory for hidden file'
+  AssertEqual '.hidden', parsed_hidden['base'], 'Correctly identifies the base for hidden file'
+  AssertEqual '.hidden', parsed_hidden['name'], 'Correctly identifies the name for hidden file'
+  AssertEqual '', parsed_hidden['ext'], 'Correctly identifies the extension for hidden file'
+
+  " Test: path#parse for a file path with special characters
+  let special_chars_path = '/home/user/notes & reminders.txt'
+  let parsed_special = path#parse(special_chars_path)
+  AssertEqual '/home/user', parsed_special['dir'], 'Correctly identifies the directory for path with special chars'
+  AssertEqual 'notes & reminders.txt', parsed_special['base'], 'Correctly identifies the base for path with special chars'
+  AssertEqual 'notes & reminders', parsed_special['name'], 'Correctly identifies the name for path with special chars'
+  AssertEqual 'txt', parsed_special['ext'], 'Correctly identifies the extension for path with special chars'
+
+  " Test: path#get_dir for a relative path with '..'
+  let relative_path = 'project/../file.txt'
+  AssertEqual 'project/..', path#get_dir(relative_path), 'Correctly gets the directory for relative path with parent reference'
+
+  " Test: path#get_dir for a path with unicode characters
+  let unicode_path = '/家/文件.txt'
+  AssertEqual '/家', path#get_dir(unicode_path), 'Correctly gets the directory for path with unicode characters'

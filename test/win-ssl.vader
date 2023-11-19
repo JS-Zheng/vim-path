@@ -1,0 +1,18 @@
+Before(Check Environment):
+  set shellslash
+
+Execute(Env Test):
+  AssertEqual 1, has('win32') || has('win64'), 'This test suite can only be run on Windows'
+  AssertEqual 1, (exists('+shellslash') && &ssl == 1), 'This test suite is for ssl'
+
+Include: win-ssl/constructor.vader
+Include: win-ssl/expand.vader
+Include: win-ssl/finder.vader
+Include: win-ssl/iter.vader
+Include: win-ssl/join.vader
+Include: win-ssl/normalize.vader
+Include: win-ssl/parse.vader
+Include: win-ssl/sep_strip.vader
+Include: win-ssl/shorten.vader
+Include: win-ssl/split.vader
+Include: win-ssl/type.vader

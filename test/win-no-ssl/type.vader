@@ -1,0 +1,43 @@
+Execute (Path Type Detection):
+
+  " Set up a testing environment
+  function! s:SetupPathTypeTestEnvironment()
+    let test_dir = tempname()
+    call mkdir(test_dir, 'p')
+    call writefile([''], test_dir . '\testfile')
+    call mkdir(test_dir . '\testdir', 'p')
+    call system('mklink ' . test_dir . '\testlink ' . test_dir . '\testfile')
+    return test_dir
+  endfunction
+
+  " Clean up the testing environment
+  function! s:CleanupPathTypeTestEnvironment(test_dir)
+    call delete(a:test_dir, 'rf')
+  endfunction
+
+  " Test: Checking if a path is absolute
+  AssertEqual 1, path#is_abs('C:\absolute\path'), 'Correctly identifies an absolute path'
+  AssertEqual 0, path#is_abs('relative\path'), 'Correctly identifies a non-absolute path'
+  AssertEqual 0, path#is_abs('\relative\path'), 'Correctly identifies a non-absolute path'
+
+  " Test: UNC path as an absolute path
+  AssertEqual 1, path#is_abs('\\server\share'), 'Recognizes UNC path as absolute'
+
+  " Test: Checking if a path is a directory
+  let test_dir = s:SetupPathTypeTestEnvironment()
+  AssertEqual 1, path#is_dir(test_dir . '\testdir'), 'Correctly identifies a directory'
+  AssertEqual 0, path#is_dir(test_dir . '\testfile'), 'Correctly identifies a non-directory'
+
+  " Test: Checking if a path is a file
+  AssertEqual 1, path#is_file(test_dir . '\testfile'), 'Correctly identifies a file'
+  AssertEqual 0, path#is_file(test_dir . '\testdir'), 'Correctly identifies a non-file'
+
+  " Test: Checking the type of a path
+  AssertEqual 'file', path#get_type(test_dir . '\testfile'), 'Correctly gets the type of a file'
+  AssertEqual 'dir', path#get_type(test_dir . '\testdir'), 'Correctly gets the type of a directory'
+
+  " Test: Checking if a file is writable
+  AssertEqual 1, path#is_writable_file(test_dir . '\testfile'), 'Correctly identifies a writable file'
+  call system('attrib +R ' . test_dir . '\testfile')
+  AssertEqual 0, path#is_writable_file(test_dir . '\testfile'), 'Correctly identifies a non-writable file'
+

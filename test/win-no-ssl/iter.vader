@@ -1,0 +1,171 @@
+Execute(Path Iteration):
+
+  " Test: Basic top-down iteration
+  let it = path#iter#('C:\Users\user\dir\file.txt')
+  AssertEqual 1, it.has_next()
+  AssertEqual 'C:\', it.next()
+  AssertEqual 1, it.has_next()
+  AssertEqual 'C:\Users\', it.next()
+  AssertEqual 1, it.has_next()
+  AssertEqual 'C:\Users\user\', it.next()
+  AssertEqual 1, it.has_next()
+  AssertEqual 'C:\Users\user\dir\', it.next()
+  AssertEqual 1, it.has_next()
+  AssertEqual 'C:\Users\user\dir\file.txt', it.next()
+  AssertEqual 0, it.has_next(), 'Top-down iterator reports no more items'
+
+  " Test: Basic bottom-up iteration
+  let it_back = path#iter#('C:\Users\user\dir\file.txt', 'b')
+  AssertEqual 1, it_back.has_next()
+  AssertEqual 'C:\Users\user\dir\file.txt', it_back.next()
+  AssertEqual 1, it_back.has_next()
+  AssertEqual 'C:\Users\user\dir\', it_back.next()
+  AssertEqual 1, it_back.has_next()
+  AssertEqual 'C:\Users\user\', it_back.next()
+  AssertEqual 1, it_back.has_next()
+  AssertEqual 'C:\Users\', it_back.next()
+  AssertEqual 1, it_back.has_next()
+  AssertEqual 'C:\', it_back.next()
+  AssertEqual 0, it_back.has_next(), 'Bottom-up iterator reports no more items'
+
+  " Test: Using the common while loop for iteration
+  let it_loop = path#iter#('C:\Users\user\dir\')
+  let result = []
+  while it_loop.has_next()
+    call add(result, it_loop.next())
+  endwhile
+  AssertEqual ['C:\', 'C:\Users\', 'C:\Users\user\', 'C:\Users\user\dir\'], result,
+    \ 'Collects all path segments using a while loop'
+
+  " Test: Using order via dictionary
+  let it_dict = path#iter#('C:\Users\', {'order': 'bottom-up'})
+  AssertEqual 'C:\Users\', it_dict.next()
+  AssertEqual 'C:\', it_dict.next()
+  AssertEqual 0, it_dict.has_next(), 'Iterator reports no more items'
+
+
+Execute (UTF-8 Path Iteration):
+
+  " Test: Top-down iteration with Traditional Chinese characters
+  let it = path#iter#('C:\家目錄\使用者\')
+  AssertEqual 1, it.has_next()
+  AssertEqual 'C:\', it.next()
+  AssertEqual 1, it.has_next()
+  AssertEqual 'C:\家目錄\', it.next()
+  AssertEqual 1, it.has_next()
+  AssertEqual 'C:\家目錄\使用者\', it.next()
+  AssertEqual 0, it.has_next(), 'Top-down iterator reports no more items for UTF-8 path'
+
+  " Test: Bottom-up iteration with Emoji characters
+  let it_back = path#iter#('C:\folder📁\file📄.txt', 'b')
+  AssertEqual 1, it_back.has_next()
+  AssertEqual 'C:\folder📁\file📄.txt', it_back.next()
+  AssertEqual 1, it_back.has_next()
+  AssertEqual 'C:\folder📁\', it_back.next()
+  AssertEqual 1, it_back.has_next()
+  AssertEqual 'C:\', it_back.next()
+  AssertEqual 0, it_back.has_next(), 'Bottom-up iterator reports no more items for Emoji path'
+
+  " Test: Combined usage of UTF-8 characters
+  let it_mixed = path#iter#('C:\家目錄📁\使用者👤\')
+  let result = []
+  while it_mixed.has_next()
+    call add(result, it_mixed.next())
+  endwhile
+  AssertEqual ['C:\', 'C:\家目錄📁\', 'C:\家目錄📁\使用者👤\'], result,
+      \ 'Collects all path segments using a while loop with mixed UTF-8 characters'
+
+  " Test: Top-down iteration with Japanese characters
+  let it_japanese = path#iter#('C:\書類\新しいフォルダ\')
+  AssertEqual 1, it_japanese.has_next()
+  AssertEqual 'C:\', it_japanese.next()
+  AssertEqual 1, it_japanese.has_next()
+  AssertEqual 'C:\書類\', it_japanese.next()
+  AssertEqual 1, it_japanese.has_next()
+  AssertEqual 'C:\書類\新しいフォルダ\', it_japanese.next()
+  AssertEqual 0, it_japanese.has_next()
+
+  " Test: Bottom-up iteration with Arabic characters
+  let it_arabic = path#iter#('C:\مستندات\ملف\', 'b')
+  AssertEqual 1, it_arabic.has_next()
+  AssertEqual 'C:\مستندات\ملف\', it_arabic.next()
+  AssertEqual 1, it_arabic.has_next()
+  AssertEqual 'C:\مستندات\', it_arabic.next()
+  AssertEqual 1, it_arabic.has_next()
+  AssertEqual 'C:\', it_arabic.next()
+  AssertEqual 0, it_arabic.has_next()
+
+  " Test: Top-down iteration with mixed emoticons
+  let it_emoticons = path#iter#('C:\folder💼\🚀launch\')
+  AssertEqual 1, it_emoticons.has_next()
+  AssertEqual 'C:\', it_emoticons.next()
+  AssertEqual 1, it_emoticons.has_next()
+  AssertEqual 'C:\folder💼\', it_emoticons.next()
+  AssertEqual 1, it_emoticons.has_next()
+  AssertEqual 'C:\folder💼\🚀launch\', it_emoticons.next()
+  AssertEqual 0, it_emoticons.has_next()
+
+  " Test: Bottom-up iteration with Korean and special symbols
+  let it_korean_special = path#iter#('C:\문서💾\프로젝트📂\', 'b')
+  AssertEqual 1, it_korean_special.has_next()
+  AssertEqual 'C:\문서💾\프로젝트📂\', it_korean_special.next()
+  AssertEqual 1, it_korean_special.has_next()
+  AssertEqual 'C:\문서💾\', it_korean_special.next()
+  AssertEqual 1, it_korean_special.has_next()
+  AssertEqual 'C:\', it_korean_special.next()
+  AssertEqual 0, it_korean_special.has_next()
+
+  " Test: Top-down iteration with mixed Russian and numbers
+  let it_russian_numbers = path#iter#('C:\документы123\файл456\')
+  AssertEqual 1, it_russian_numbers.has_next()
+  AssertEqual 'C:\', it_russian_numbers.next()
+  AssertEqual 1, it_russian_numbers.has_next()
+  AssertEqual 'C:\документы123\', it_russian_numbers.next()
+  AssertEqual 1, it_russian_numbers.has_next()
+  AssertEqual 'C:\документы123\файл456\', it_russian_numbers.next()
+  AssertEqual 0, it_russian_numbers.has_next()
+
+
+Execute (UNC Path Iteration):
+
+  " Test: Top-down iteration with UNC path
+  let it = path#iter#('\\server\share\folder\file.txt')
+  AssertEqual 1, it.has_next()
+  AssertEqual '\\server\share\', it.next()
+  AssertEqual 1, it.has_next()
+  AssertEqual '\\server\share\folder\', it.next()
+  AssertEqual 1, it.has_next()
+  AssertEqual '\\server\share\folder\file.txt', it.next()
+  AssertEqual 0, it.has_next(), 'Top-down iterator reports no more items for UNC path'
+
+  " Test: Bottom-up iteration with UNC path
+  let it_back = path#iter#('\\server\share\folder\file.txt', 'b')
+  AssertEqual 1, it_back.has_next()
+  AssertEqual '\\server\share\folder\file.txt', it_back.next()
+  AssertEqual 1, it_back.has_next()
+  AssertEqual '\\server\share\folder\', it_back.next()
+  AssertEqual 1, it_back.has_next()
+  AssertEqual '\\server\share\', it_back.next()
+  AssertEqual 0, it_back.has_next(), 'Bottom-up iterator reports no more items for UNC path'
+
+  " Test: Iteration with UNC path containing Unicode characters
+  let it_unicode = path#iter#('\\server\share\家目錄\使用者\')
+  AssertEqual 1, it_unicode.has_next()
+  AssertEqual '\\server\share\', it_unicode.next()
+  AssertEqual 1, it_unicode.has_next()
+  AssertEqual '\\server\share\家目錄\', it_unicode.next()
+  AssertEqual 1, it_unicode.has_next()
+  AssertEqual '\\server\share\家目錄\使用者\', it_unicode.next()
+  AssertEqual 0, it_unicode.has_next(), 'Iterator reports no more items for UNC path with Unicode characters'
+
+  " Test: Iteration with complex UNC path
+  let it_complex = path#iter#('\\server\share\folder\subfolder\anotherfolder\')
+  AssertEqual 1, it_complex.has_next()
+  AssertEqual '\\server\share\', it_complex.next()
+  AssertEqual 1, it_complex.has_next()
+  AssertEqual '\\server\share\folder\', it_complex.next()
+  AssertEqual 1, it_complex.has_next()
+  AssertEqual '\\server\share\folder\subfolder\', it_complex.next()
+  AssertEqual 1, it_complex.has_next()
+  AssertEqual '\\server\share\folder\subfolder\anotherfolder\', it_complex.next()
+  AssertEqual 0, it_complex.has_next(), 'Iterator reports no more items for complex UNC path'

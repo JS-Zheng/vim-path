@@ -1,0 +1,18 @@
+Before(Check Environment):
+  set noshellslash
+
+Execute(Env Test):
+  AssertEqual 1, has('win32') || has('win64'), 'This test suite can only be run on Windows'
+  AssertEqual 1, (!exists('+shellslash') || &ssl == 0), 'This test suite is for nossl'
+
+Include: win-no-ssl/constructor.vader
+Include: win-no-ssl/expand.vader
+Include: win-no-ssl/finder.vader
+Include: win-no-ssl/iter.vader
+Include: win-no-ssl/join.vader
+Include: win-no-ssl/normalize.vader
+Include: win-no-ssl/parse.vader
+Include: win-no-ssl/sep_strip.vader
+Include: win-no-ssl/shorten.vader
+Include: win-no-ssl/split.vader
+Include: win-no-ssl/type.vader

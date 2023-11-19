@@ -1,0 +1,38 @@
+Execute (Path Resolution):
+
+  " Test: Resolves a symbolic link to its target
+  call system('echo "test content" > test_file.txt')
+  call system('ln -s test_file.txt link_to_test_file.txt')
+  AssertEqual 'test_file.txt', path#resolve('link_to_test_file.txt'), 'Resolves a symbolic link to its target'
+  call delete('test_file.txt')
+  call delete('link_to_test_file.txt')
+
+  " Test: Returns the target path for broken links, even if the target doesn't exist
+  call system('ln -s nonexistent_file.txt broken_link.txt')
+  AssertEqual 'nonexistent_file.txt', path#resolve('broken_link.txt'), 'Returns the target path for broken links, even if the target doesnt exist'
+  call delete('broken_link.txt')
+
+  " Test: Returns the original path for non-link files
+  call system('echo "another content" > regular_file.txt')
+  AssertEqual 'regular_file.txt', path#resolve('regular_file.txt'), 'Returns the original path for non-link files'
+  call delete('regular_file.txt')
+
+  " Test: Resolve path with multiple nested symbolic links
+  call system('ln -s nested_link1.txt nested_link2.txt')
+  call system('ln -s nested_link2.txt nested_link3.txt')
+  AssertEqual 'nested_link1.txt', path#resolve('nested_link3.txt'), 'Handles multiple nested symbolic links correctly'
+  call delete('nested_link1.txt')
+  call delete('nested_link2.txt')
+  call delete('nested_link3.txt')
+
+  " Test: Resolving a path that doesn't point to a symbolic link should return the original path
+  call system('echo "test content" > real_file.txt')
+  AssertEqual 'real_file.txt', path#resolve('real_file.txt'), 'Returns the original path for non-symbolic link files'
+  call delete('real_file.txt')
+
+  " Test: Resolving a path for a directory symbolic link
+  call system('mkdir real_dir')
+  call system('ln -s real_dir dir_link')
+  AssertEqual 'real_dir', path#resolve('dir_link'), 'Resolves symbolic links for directories correctly'
+  call delete('real_dir', 'd')
+  call delete('dir_link')

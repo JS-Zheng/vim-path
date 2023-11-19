@@ -1,0 +1,127 @@
+Execute(Path Iteration):
+
+  " Test: Basic top-down iteration
+  let it = path#iter#('/home/user/dir/file.txt')
+  AssertEqual 1, it.has_next()
+  AssertEqual '/', it.next()
+  AssertEqual 1, it.has_next()
+  AssertEqual '/home/', it.next()
+  AssertEqual 1, it.has_next()
+  AssertEqual '/home/user/', it.next()
+  AssertEqual 1, it.has_next()
+  AssertEqual '/home/user/dir/', it.next()
+  AssertEqual 1, it.has_next()
+  AssertEqual '/home/user/dir/file.txt', it.next()
+  AssertEqual 0, it.has_next(), 'Top-down iterator reports no more items'
+
+  " Test: Basic bottom-up iteration
+  let it_back = path#iter#('/home/user/dir/file.txt', 'b')
+  AssertEqual 1, it_back.has_next()
+  AssertEqual '/home/user/dir/file.txt', it_back.next()
+  AssertEqual 1, it_back.has_next()
+  AssertEqual '/home/user/dir/', it_back.next()
+  AssertEqual 1, it_back.has_next()
+  AssertEqual '/home/user/', it_back.next()
+  AssertEqual 1, it_back.has_next()
+  AssertEqual '/home/', it_back.next()
+  AssertEqual 1, it_back.has_next()
+  AssertEqual '/', it_back.next()
+  AssertEqual 0, it_back.has_next(), 'Bottom-up iterator reports no more items'
+
+  " Test: Using the common while loop for iteration
+  let it_loop = path#iter#('/home/user/dir/')
+  let result = []
+  while it_loop.has_next()
+    call add(result, it_loop.next())
+  endwhile
+  AssertEqual ['/', '/home/', '/home/user/', '/home/user/dir/'], result,
+    \ 'Collects all path segments using a while loop'
+
+  " Test: Using order via dictionary
+  let it_dict = path#iter#('/home/user/', {'order': 'bottom-up'})
+  AssertEqual '/home/user/', it_dict.next()
+  AssertEqual '/home/', it_dict.next()
+  AssertEqual '/', it_dict.next()
+  AssertEqual 0, it_dict.has_next(), 'Iterator reports no more items'
+
+
+Execute (UTF-8 Path Iteration):
+
+  " Test: Top-down iteration with Traditional Chinese characters
+  let it = path#iter#('/家目錄/使用者/')
+  AssertEqual 1, it.has_next()
+  AssertEqual '/', it.next()
+  AssertEqual 1, it.has_next()
+  AssertEqual '/家目錄/', it.next()
+  AssertEqual 1, it.has_next()
+  AssertEqual '/家目錄/使用者/', it.next()
+  AssertEqual 0, it.has_next(), 'Top-down iterator reports no more items for UTF-8 path'
+
+  " Test: Bottom-up iteration with Emoji characters
+  let it_back = path#iter#('/folder📁/file📄.txt', 'b')
+  AssertEqual 1, it_back.has_next()
+  AssertEqual '/folder📁/file📄.txt', it_back.next()
+  AssertEqual 1, it_back.has_next()
+  AssertEqual '/folder📁/', it_back.next()
+  AssertEqual 1, it_back.has_next()
+  AssertEqual '/', it_back.next()
+  AssertEqual 0, it_back.has_next(), 'Bottom-up iterator reports no more items for Emoji path'
+
+  " Test: Combined usage of UTF-8 characters
+  let it_mixed = path#iter#('/家目錄📁/使用者👤/')
+  let result = []
+  while it_mixed.has_next()
+    call add(result, it_mixed.next())
+  endwhile
+  AssertEqual ['/', '/家目錄📁/', '/家目錄📁/使用者👤/'], result,
+      \ 'Collects all path segments using a while loop with mixed UTF-8 characters'
+
+  " Test: Top-down iteration with Japanese characters
+  let it_japanese = path#iter#('/書類/新しいフォルダ/')
+  AssertEqual 1, it_japanese.has_next()
+  AssertEqual '/', it_japanese.next()
+  AssertEqual 1, it_japanese.has_next()
+  AssertEqual '/書類/', it_japanese.next()
+  AssertEqual 1, it_japanese.has_next()
+  AssertEqual '/書類/新しいフォルダ/', it_japanese.next()
+  AssertEqual 0, it_japanese.has_next()
+
+  " Test: Bottom-up iteration with Arabic characters
+  let it_arabic = path#iter#('/مستندات/ملف/', 'b')
+  AssertEqual 1, it_arabic.has_next()
+  AssertEqual '/مستندات/ملف/', it_arabic.next()
+  AssertEqual 1, it_arabic.has_next()
+  AssertEqual '/مستندات/', it_arabic.next()
+  AssertEqual 1, it_arabic.has_next()
+  AssertEqual '/', it_arabic.next()
+  AssertEqual 0, it_arabic.has_next()
+
+  " Test: Top-down iteration with mixed emoticons
+  let it_emoticons = path#iter#('/folder💼/🚀launch/')
+  AssertEqual 1, it_emoticons.has_next()
+  AssertEqual '/', it_emoticons.next()
+  AssertEqual 1, it_emoticons.has_next()
+  AssertEqual '/folder💼/', it_emoticons.next()
+  AssertEqual 1, it_emoticons.has_next()
+  AssertEqual '/folder💼/🚀launch/', it_emoticons.next()
+  AssertEqual 0, it_emoticons.has_next()
+
+  " Test: Bottom-up iteration with Korean and special symbols
+  let it_korean_special = path#iter#('/문서💾/프로젝트📂/', 'b')
+  AssertEqual 1, it_korean_special.has_next()
+  AssertEqual '/문서💾/프로젝트📂/', it_korean_special.next()
+  AssertEqual 1, it_korean_special.has_next()
+  AssertEqual '/문서💾/', it_korean_special.next()
+  AssertEqual 1, it_korean_special.has_next()
+  AssertEqual '/', it_korean_special.next()
+  AssertEqual 0, it_korean_special.has_next()
+
+  " Test: Top-down iteration with mixed Russian and numbers
+  let it_russian_numbers = path#iter#('/документы123/файл456/')
+  AssertEqual 1, it_russian_numbers.has_next()
+  AssertEqual '/', it_russian_numbers.next()
+  AssertEqual 1, it_russian_numbers.has_next()
+  AssertEqual '/документы123/', it_russian_numbers.next()
+  AssertEqual 1, it_russian_numbers.has_next()
+  AssertEqual '/документы123/файл456/', it_russian_numbers.next()
+  AssertEqual 0, it_russian_numbers.has_next()

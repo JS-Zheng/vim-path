@@ -1,0 +1,67 @@
+Execute (Path Splitting):
+
+  " Test: Splitting an absolute path with multiple directories and a file
+  AssertEqual ['C:/', 'Users/', 'UserName/', 'file.txt'], path#split('C:/Users/UserName/file.txt'), 'Splits path with directories and file'
+
+  " Test: Splitting an absolute path with trailing backslash
+  AssertEqual ['C:/', 'foo/', 'bar/'], path#split('C:/foo/bar/'), 'Splits path with trailing backslash'
+
+  " Test: Splitting an absolute path without trailing backslash
+  AssertEqual ['C:/', 'foo/', 'bar'], path#split('C:/foo/bar'), 'Splits path without trailing backslash'
+
+  " Test: Splitting a path with just the drive root
+  AssertEqual ['C:/'], path#split('C:/'), 'Splits drive root'
+
+  " Test: Splitting a path with repeated backslashes
+  AssertEqual ['C:/', '/', 'foo/', '/', 'bar/', '/'], path#split('C://foo//bar//'), 'Handles paths with repeated backslashes'
+
+  " Test: Splitting a relative path
+  AssertEqual ['foo/', 'bar'], path#split('foo/bar'), 'Handles relative paths without leading backslash'
+
+  " Test: Splitting an empty path
+  AssertEqual [], path#split(''), 'Handles empty paths'
+
+  " Test: Splitting a single character path
+  AssertEqual ['a'], path#split('a'), 'Splits single character path'
+
+  " Test: Splitting a path with only backslashes
+  AssertEqual ['/', '/', '/', '/'], path#split('////'), 'Handles paths with only backslashes'
+
+  " Test: Splitting a path starting with multiple backslashes and no trailing backslash
+  AssertEqual ['//foo/bar/', 'qoo'], path#split('//foo/bar/qoo'), 'Handles paths starting with multiple backslashes'
+
+  " Test: Splitting a path with only directory names and no backslashes
+  AssertEqual ['foobar'], path#split('foobar'), 'Handles paths with no backslashes'
+
+  " Test: Splitting a path with mixed character types
+  AssertEqual ['//foo!@#$%^&*()bar_/123/', 'test.txt'], path#split('//foo!@#$%^&*()bar_/123/test.txt'), 'Splits paths with mixed character types'
+
+  " Test: Splitting a UNC path
+  AssertEqual ['//server/share/', 'folder/', 'subfolder/', 'file.txt'], path#split('//server/share/folder/subfolder/file.txt'), 'Correctly splits a UNC path'
+
+  " Test: Splitting a path with mixed slashes and backslashes
+  AssertEqual ['C:/', 'Users/', 'UserName\', 'file.txt'], path#split('C:/Users/UserName\file.txt'), 'Splits path with mixed slashes and backslashes'
+
+
+Execute (Path Splitting with Mixed Slashes and Backslashes):
+
+  " Test: Mixed slashes and backslashes in the middle of the path
+  AssertEqual ['C:/', 'Users\', 'UserName/', 'Documents\', 'file.txt'], path#split('C:/Users\UserName/Documents\file.txt'), 'Splits path with mixed slashes and backslashes in the middle'
+
+  " Test: Starting with slashes and switching to backslashes
+  AssertEqual ['C:\', 'Users/', 'UserName\', 'Documents/', 'file.txt'], path#split('C:\Users/UserName\Documents/file.txt'), 'Handles starting with slashes and switching to backslashes'
+
+  " Test: Alternating slashes and backslashes
+  AssertEqual ['C:\', 'Users/', 'UserName\', 'Documents/', 'file.txt'], path#split('C:\Users/UserName\Documents/file.txt'), 'Handles alternating slashes and backslashes'
+
+  " Test: Mixed slashes and backslashes at the end of the path
+  AssertEqual ['C:/', 'Program Files\', 'Application/', 'file.txt\'], path#split('C:/Program Files\Application/file.txt\'), 'Handles mixed slashes and backslashes at the end of the path'
+
+  " Test: UNC path with mixed slashes and backslashes
+  AssertEqual ['//server/share\', 'folder/', 'subfolder\', 'file.txt'], path#split('//server/share\folder/subfolder\file.txt'), 'Correctly splits a UNC path with mixed slashes and backslashes'
+
+  " Test: Root drive with mixed slashes and backslashes
+  AssertEqual ['C:\'], path#split('C:\'), 'Correctly handles root drive with trailing slash'
+
+  " Test: Mixed separators in a single component
+  AssertEqual ['C:/', 'folder-name/', 'with\', 'mixed\', 'separators'], path#split('C:/folder-name/with\mixed\separators'), 'Handles mixed separators in a single component'

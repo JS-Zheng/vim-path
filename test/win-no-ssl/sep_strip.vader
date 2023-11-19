@@ -1,0 +1,64 @@
+Execute (Separator Stripping):
+
+  " Test: Getting the path separator
+  AssertEqual '\', path#get_sep(), 'Correctly returns the path separator for Windows systems'
+
+  " Test: Removing both leading and trailing path separators.
+  AssertEqual 'folder\file', path#strip_sep('\folder\file\'), 'Correctly removes both leading and trailing separators'
+
+  " Test: Handles multiple consecutive separators.
+  AssertEqual 'folder\file', path#strip_sep('\\\\folder\file\\\\'), 'Handles multiple consecutive separators'
+
+  " Test: Handles paths without separators correctly.
+  AssertEqual 'file', path#strip_sep('file'), 'Handles paths without separators correctly'
+
+  " Test: Handles paths with only separators.
+  AssertEqual '', path#strip_sep('\\\\'), 'Handles paths with only separators'
+
+  " Test: Paths with non-separator trailing characters.
+  AssertEqual 'folder\file..', path#strip_sep('\folder\file..\\\\'), 'Paths with non-separator trailing characters'
+
+  " Test: Special characters in paths are not affected.
+  AssertEqual '*folder?\file#name<with>special|chars', path#strip_sep('*folder?\file#name<with>special|chars\\'), 'Special characters in paths are not affected'
+
+  " Test: Ensuring it works with spaces around separators.
+  AssertEqual ' folder \ file ', path#strip_sep(' folder \ file '), 'Ensuring it works with spaces around separators'
+
+  " Test: Removing only trailing path separators.
+  AssertEqual '\folder\file', path#strip_trailing_sep('\folder\file\\'), 'Correctly removes only trailing separators'
+
+  " Test: Stripping trailing separator from a single directory.
+  AssertEqual '\folder', path#strip_trailing_sep('\folder\\'), 'Stripping trailing separator from a single directory'
+
+  " Test: Removing only leading path separators.
+  AssertEqual 'folder\file\\', path#strip_leading_sep('\\folder\file\\'), 'Correctly removes only leading separators'
+
+  " Test: Ensures it does not remove internal separators.
+  AssertEqual 'folder\subfolder\file\\', path#strip_leading_sep('folder\subfolder\file\\'), 'Ensures it does not remove internal separators'
+
+  " Test: Ensures it does not remove leading separators from relative paths.
+  AssertEqual '.\folder\file\\', path#strip_leading_sep('.\folder\file\\'), 'Ensures it does not remove leading separators from relative paths'
+
+
+Execute (Separator Stripping with Forward Slashes):
+
+  " Test: Forward slashes acting as path separators are stripped.
+  AssertEqual 'folder/subfolder/file', path#strip_sep('folder/subfolder/file/'), 'Forward slashes are stripped when acting as separators'
+
+  " Test: Leading forward slashes are removed.
+  AssertEqual 'folder/file', path#strip_leading_sep('/folder/file'), 'Leading forward slashes are removed'
+
+  " Test: Trailing forward slashes are removed.
+  AssertEqual 'folder/file', path#strip_trailing_sep('folder/file/'), 'Trailing forward slashes are removed'
+
+  " Test: Mixed slashes and backslashes are all treated as separators and stripped.
+  AssertEqual 'folder\subfolder/file', path#strip_sep('\/\/\folder\subfolder/file\/\/'), 'Mixed slashes and backslashes are all stripped'
+
+  " Test: Paths containing only forward slashes are stripped to an empty string.
+  AssertEqual '', path#strip_sep('/'), 'Paths with only forward slashes are stripped to empty'
+
+  " Test: Multiple consecutive forward slashes are stripped.
+  AssertEqual 'folder//file', path#strip_sep('/////folder//file/////'), 'Consecutive forward slashes are stripped'
+
+  " Test: Mixing of slashes and backslashes results in all being stripped.
+  AssertEqual 'folder/subfolder\file', path#strip_sep('\/\/\/\/folder/subfolder\file///\\\/'), 'Mixing slashes and backslashes results in all being stripped'

@@ -1,0 +1,50 @@
+Execute (Path Shortening):
+
+  " Test: Shortening a path with default length
+  let path = '/home/user/projects/vim-plugin'
+  AssertEqual '/h/u/p/vim-plugin', path#shorten(path), 'Shortens each component to default length'
+
+  " Test: Shortening a path with specified length
+  AssertEqual '/ho/us/pr/vim-plugin', path#shorten(path, 2), 'Shortens each component to specified length'
+
+  " Test: Shortening a path with a length greater than component length
+  AssertEqual '/home/user/projects/vim-plugin', path#shorten(path, 10), 'Retains full component if length greater than component length'
+
+  " Test: Shortening a relative path
+  let relative_path = 'user/projects/vim-plugin'
+  AssertEqual 'u/p/vim-plugin', path#shorten(relative_path), 'Shortens each component of a relative path'
+
+  " Test: Shortening a path with unique substrings
+  let unique_path = '/home/user/projects/vim-plugin'
+  AssertEqual '/hom/use/pro/vim-plugin', path#shorten(unique_path, 3), 'Shortens to unique substrings'
+
+  " Test: Shortening a path with similar starting substrings
+  let similar_path = '/projects/project1/project2'
+  AssertEqual '/projects/project1/project2', path#shorten(similar_path), 'Handles similar starting substrings correctly'
+
+  " Test: Shortening a path with a single component
+  AssertEqual '/home', path#shorten('/home'), 'Correctly handles single component paths'
+
+  " Test: Shortening a path with Unicode characters
+  let unicode_path = '/使用者/專案/插件'
+  AssertEqual '/使/專/插件', path#shorten(unicode_path), 'Shortens path with Unicode characters'
+
+  " Test: Shortening a path with complex nested directories
+  let complex_path = '/home/user/projects/vim-plugin/deeply/nested/directory/structure'
+  AssertEqual '/h/u/p/v/de/n/di/structure', path#shorten(complex_path), 'Shortens a path with complex nested directories'
+
+  " Test: Shortening a path with mixed character types
+  let mixed_char_path = '/home1/user-name/projects_2021/vim-plugin'
+  AssertEqual '/h/u/p/vim-plugin', path#shorten(mixed_char_path), 'Shortens a path with mixed character types'
+
+  " Test: Shortening a path with special characters and spaces
+  let special_char_path = '/home/user/my projects/vim plugin'
+  AssertEqual '/h/u/m/vim plugin', path#shorten(special_char_path), 'Shortens a path with special characters and spaces'
+
+  " Test: Shortening a path with trailing slash
+  let trailing_slash_path = '/home/user/projects/vim-plugin/'
+  AssertEqual '/h/u/p/vim-plugin/', path#shorten(trailing_slash_path), 'Correctly handles path with trailing slash'
+
+  " Test: Shortening a path while preserving uniqueness
+  let similar_names_path = '/projects/project-alpha/project-beta'
+  AssertEqual '/projects/project-a/project-beta', path#shorten(similar_names_path, 3), 'Preserves uniqueness while shortening'

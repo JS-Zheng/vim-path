@@ -1,0 +1,93 @@
+Execute(Path Expansion):
+
+  " Test: Expansion of ~ character
+  AssertEqual $HOME . '/file', path#expand('~/file'), '~ is correctly expanded to user home directory'
+  AssertEqual $HOME . '/project/file', path#expand('~/project/file'), '~ is correctly expanded even in a longer path'
+
+  " Test: Expansion of environment variables in the $VAR_NAME format
+  let $TEST_ENV_VAR = '/test_path'
+  AssertEqual '/test_path/file', path#expand('$TEST_ENV_VAR/file'), '$VAR_NAME is correctly expanded'
+  unlet $TEST_ENV_VAR
+
+  " Test: Expansion of environment variables in the ${VAR_NAME} format
+  let $ANOTHER_TEST_ENV_VAR = '/another_test_path'
+  AssertEqual '/another_test_path/file', path#expand('${ANOTHER_TEST_ENV_VAR}/file'), '${VAR_NAME} is correctly expanded'
+  unlet $ANOTHER_TEST_ENV_VAR
+
+  " Test: Mixed expansions
+  let $MIXED_TEST_ENV_VAR = 'mixed_test_path'
+  AssertEqual $HOME . '/mixed_test_path/file', path#expand('~/${MIXED_TEST_ENV_VAR}/file'), 'Mixed expansion of ~ and ${VAR_NAME} works correctly'
+  unlet $MIXED_TEST_ENV_VAR
+
+  " Test: Chained environment variables
+  let $CHAIN_PATH_1 = 'part1'
+  let $CHAIN_PATH_2 = 'part2'
+  let $CHAIN_PATH_3 = 'part3'
+  AssertEqual 'part1/part2/part3/file', path#expand('$CHAIN_PATH_1/$CHAIN_PATH_2/$CHAIN_PATH_3/file'), 'Chained environment variables are correctly expanded'
+  unlet $CHAIN_PATH_1 $CHAIN_PATH_2 $CHAIN_PATH_3
+
+  " Test: Environment variables with underscores and numbers
+  let $PATH_VAR_123 = 'under_score_and_num123'
+  AssertEqual 'under_score_and_num123/file', path#expand('$PATH_VAR_123/file'), 'Environment variable names with underscores and numbers are expanded correctly'
+  unlet $PATH_VAR_123
+
+  " Test: Non-existing environment variables
+  AssertEqual '$NON_EXISTING_VAR/file', path#expand('$NON_EXISTING_VAR/file'), 'Non-existing environment variables are not expanded and left as-is'
+
+  " Test: Mixed ~ and $VAR
+  let $PROJECT_DIR = 'projects'
+  AssertEqual $HOME . '/projects/docs', path#expand('~/${PROJECT_DIR}/docs'), 'Combination of ~ and $VAR_NAME expansions work correctly'
+  unlet $PROJECT_DIR
+
+  " Test: Complex paths with ~ and environment variables
+  let $DATA_DIR = 'data'
+  let $SUB_DIR = 'sub_dir'
+  AssertEqual $HOME . '/data/sub_dir/file.txt', path#expand('~/${DATA_DIR}/${SUB_DIR}/file.txt'), 'Complex paths with multiple expansions are handled correctly'
+  unlet $DATA_DIR $SUB_DIR
+
+  " Test: Paths with non-standard characters (e.g. spaces, dashes)
+  let $SPACE_DIR = 'space dir'
+  AssertEqual 'space dir/file.txt', path#expand('$SPACE_DIR/file.txt'), 'Paths with spaces in directory names are expanded correctly'
+  unlet $SPACE_DIR
+
+  let $DASH_DIR = 'dash-dir'
+  AssertEqual 'dash-dir/file.txt', path#expand('$DASH_DIR/file.txt'), 'Paths with dashes in directory names are expanded correctly'
+  unlet $DASH_DIR
+
+
+  " Test: Special vim characters and sequences
+
+  " Test for '%', which in Vim represents the current file
+  AssertEqual '%file', path#expand('%file'), 'The % character is not expanded'
+
+  " Test for '#', which in Vim represents the alternate file
+  AssertEqual '#file', path#expand('#file'), 'The # character is not expanded'
+
+  " Test for '<', which in Vim can be used in sequences like '<cword>', '<cfile>', etc.
+  AssertEqual '<cfile>', path#expand('<cfile>'), 'The < sequence is not expanded'
+  AssertEqual '<cword>', path#expand('<cword>'), 'The < sequence is not expanded'
+
+
+  " Test: Wildcards
+
+  " Test for '*', which in Vim can be used as a wildcard for filenames
+  let $DIR_NAME = 'dir*'
+  AssertEqual 'dir*/file', path#expand('$DIR_NAME/file'), 'The * character is not expanded as a wildcard'
+  unlet $DIR_NAME
+
+  " Test for '?', which in Vim can be used as a wildcard for a single character in filenames
+  let $FILE_NAME = 'file?'
+  AssertEqual 'file?', path#expand('$FILE_NAME'), 'The ? character is not expanded as a wildcard'
+  unlet $FILE_NAME
+
+
+  " Test: Special vim sequences that should not be expanded
+
+  " :p modifies path to be full path, but should not be expanded here
+  AssertEqual ':pfile', path#expand(':pfile'), 'The :p sequence is not expanded'
+
+  " :h modifies path to head of last path component, but should not be expanded here
+  AssertEqual ':hfile', path#expand(':hfile'), 'The :h sequence is not expanded'
+
+  " :t modifies path to tail of last path component, but should not be expanded here
+  AssertEqual ':tfile', path#expand(':tfile'), 'The :t sequence is not expanded'

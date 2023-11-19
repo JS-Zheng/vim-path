@@ -1,0 +1,123 @@
+Execute (Path Constructor):
+  " Initialize default constructor options before each test
+  let g:path_constructor_opts = {
+    \ 'expand': 0,
+    \ 'normalize': 0,
+    \ 'resolve': 0
+  \ }
+
+  " Test: Default behavior with no arguments
+  AssertEqual '.', path#(), 'Returns current directory for no arguments'
+
+  " Test: Path as a string
+  AssertEqual 'C:/user', path#('C:/user'), 'Handles simple string path'
+
+  " Test: Path as a dictionary
+  let dict_path = {'dir': 'C:/', 'base': 'user'}
+  AssertEqual 'C:/user', path#(dict_path), 'Handles dictionary path'
+
+  " Test: Path as a list
+  let list_path = ['C:/', 'user']
+  AssertEqual 'C:/user', path#(list_path), 'Handles list path'
+
+  " Test: Expanding environment variables
+  let $TEST_VAR = 'C:'
+  AssertEqual 'C:/user', path#('$TEST_VAR/user', {'expand': 1}), 'Expands environment variables'
+
+  " Test: Normalizing the path
+  AssertEqual 'C:/user', path#('C:/path/../user', {'normalize': 1}), 'Normalizes the path'
+
+  " Test: Handling invalid arguments
+  AssertThrows path#(100)
+
+  " Test: Using string options
+  AssertEqual 'C:/user', path#('C:/path/../user', 'en'), 'Handles string options for normalize and expand'
+
+  " Test: Path with trailing backslash
+  AssertEqual 'C:/path/user', path#('C:/path/user/', 'n'), 'Normalizes path with trailing backslash'
+
+  " Test: Path with multiple backslashes
+  AssertEqual 'C:/path/user', path#('C:/path//user', 'n'), 'Normalizes path with multiple backslashes'
+
+  " Test: Path with complex relative parts
+  AssertEqual 'C:/path/user', path#('C:/path/././../path/user', 'n'), 'Normalizes complex relative path'
+
+  " Test: Path as an empty list
+  AssertEqual '.', path#([]), 'Handles empty list path'
+
+  " Test: Path as a list with empty elements
+  let list_path_with_empty_elements = ['C:/path', '', 'user']
+  AssertEqual 'C:/path/user', path#(list_path_with_empty_elements, 'n'), 'Handles list path with empty elements'
+
+  " Test: Dictionary path with missing keys
+  let incomplete_dict_path = {'dir': 'C:/path'}
+  AssertEqual 'C:/path', path#(incomplete_dict_path), 'Handles incomplete dictionary path'
+
+  " Test: Disabling expansion of environment variables
+  let $TEST_PATH = 'C:/path'
+  AssertEqual '$TEST_PATH/user', path#('$TEST_PATH/user', 'E'), 'Does not expand environment variables when disabled'
+
+  " Test: Disabling path normalization
+  AssertEqual 'C:/path/../path/user', path#('C:/path/../path/user', 'N'), 'Does not normalize the path when disabled'
+
+  " Test: Using uppercase options for no operations
+  AssertEqual 'C:/path/../path/user', path#('C:/path/../path/user', 'ENR'), 'No operations are performed with uppercase options'
+
+  " Test: Path with unusual characters
+  AssertEqual 'C:/path/!@#$%^&*()_+', path#('C:/path/!@#$%^&*()_+', 'n'), 'Handles path with unusual characters'
+
+  " Test: Normalizing a deeply nested relative path
+  AssertEqual 'C:/path/a/final', path#('C:/path/a/b/c/../../d/../././e/../final', 'n'), 'Normalizes a deeply nested relative path'
+
+  " Test: Path with unicode characters
+  AssertEqual 'C:/路徑/子目錄/文件.txt', path#('C:/路徑/./子目錄/文件.txt', 'n'), 'Handles path with unicode characters'
+
+  " Test: Path with mixed case environment variables
+  let $MiXeD_CaSe_VAR = 'C:/mixedCasePath'
+  AssertEqual 'C:/mixedCasePath/final', path#('$MiXeD_CaSe_VAR/final', 'e'), 'Handles path with mixed case'
+
+
+Execute (Path Constructor for Windows UNC Paths):
+  " Initialize default constructor options before each test
+  let g:path_constructor_opts = {
+    \ 'expand': 0,
+    \ 'normalize': 0,
+    \ 'resolve': 0
+  \ }
+
+  " Test: UNC Path as a string
+  AssertEqual '//Server/Share/User', path#('//Server/Share/User'), 'Handles UNC path as string'
+
+  " Test: UNC Path as a dictionary
+  let dict_path = {'dir': '//Server/Share', 'base': 'User'}
+  AssertEqual '//Server/Share/User', path#(dict_path), 'Handles UNC path as dictionary'
+
+  " Test: UNC Path as a list
+  let list_path = ['//Server/Share', 'User']
+  AssertEqual '//Server/Share/User', path#(list_path), 'Handles UNC path as list'
+
+  " Test: Expanding environment variables in UNC path
+  let $TEST_VAR = '//Server/Share'
+  AssertEqual '//Server/Share/User', path#('$TEST_VAR/User', {'expand': 1}), 'Expands environment variables in UNC path'
+
+  " Test: Normalizing UNC path
+  AssertEqual '//Server/Share/User', path#('//Server/Share/path/../User', {'normalize': 1}), 'Normalizes UNC path'
+
+  " Test: UNC Path with trailing backslash
+  AssertEqual '//Server/Share/User', path#('//Server/Share/User/', 'n'), 'Normalizes UNC path with trailing backslash'
+
+  " Test: UNC Path with multiple backslashes
+  AssertEqual '//Server/Share/User', path#('//Server/Share//User', 'n'), 'Normalizes UNC path with multiple backslashes'
+
+  " Test: UNC Path with mixed case environment variables
+  let $UNC_PATH_VAR = '//Server/Share'
+  AssertEqual '//Server/Share/Path', path#('$UNC_PATH_VAR/Path', 'e'), 'Handles UNC path with mixed case environment variables'
+
+  " Test: UNC Path containing dots and spaces
+  AssertEqual '//Server/Share/Path With Space', path#('//Server/Share/Path With Space', 'n'), 'Handles UNC path with dots and spaces'
+
+  " Test: UNC Path with unusual characters
+  AssertEqual '//Server/Share/Path!@#$', path#('//Server/Share/Path!@#$', 'n'), 'Handles UNC path with unusual characters'
+
+  " Test: UNC Path with unicode characters
+  AssertEqual '//Server/Share/路徑/文件.txt', path#('//Server/Share/路徑/文件.txt', 'n'), 'Handles UNC path with unicode characters'
